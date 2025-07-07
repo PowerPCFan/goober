@@ -1,3 +1,5 @@
+# this fork exists for no reason and it's over 100 commits behind gooberinc/goober
+
 Discord bot that learns from what people say!
 
 Please see the [wiki](https://wiki.goober.whatdidyouexpect.eu)
