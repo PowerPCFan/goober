@@ -359,16 +359,16 @@ class Climate(commands.Cog):
 
         now = datetime.datetime.now()
         hour = now.hour + now.minute / 60 + now.second / 3600
-        solar_hour = hour + (settings["longtitude"] - 45) / 15
+        solar_hour = hour + (settings.longtitude - 45) / 15
         nth_day_of_year = (now - datetime.datetime(now.year, 1, 1)).days + 1
         declination = math.radians(23.445 * math.sin(math.radians((360 / 365.25) * (nth_day_of_year - 81))))
         hour_angle = math.radians(15 * (solar_hour - 12))
 
         result = math.degrees(math.asin(
             math.sin(declination) *
-            math.sin(math.radians(settings["latitude"])) +
+            math.sin(math.radians(settings.latitude)) +
             math.cos(declination) *
-            math.cos(math.radians(settings["latitude"])) *
+            math.cos(math.radians(settings.latitude)) *
             math.cos(hour_angle)
         ))
 
@@ -427,8 +427,8 @@ class Climate(commands.Cog):
     @commands.command()
     async def set_coords(self, ctx: commands.Context, latitude: float, longtitude: float):
         settings: SettingsType = settings_manager.get_plugin_settings("climate", default_settings) # type: ignore
-        settings["latitude"] = latitude
-        settings["longtitude"] = longtitude
+        settings.latitude = latitude
+        settings.longtitude = longtitude
         settings_manager.set_plugin_setting("climate", settings)
 
         await send_message(ctx, "Saved coordinates!")

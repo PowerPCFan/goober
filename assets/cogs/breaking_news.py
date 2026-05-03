@@ -31,7 +31,7 @@ class BreakingNews(commands.Cog):
     async def auto_create(self, ctx: commands.Context, enabled: str | None):
         if enabled not in ["yes", "no"]:
             await ctx.send(
-                f'Please use {settings["bot"]["prefix"]}auto_create <yes | no>'
+                f'Please use {settings.bot.prefix}auto_create <yes | no>'
             )
             return False
 

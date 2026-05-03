@@ -44,7 +44,7 @@ class SongChanger(commands.Cog):
             await ctx.send(f"Type needs to be one of the following: {', '.join(get_args(ActivityType))}")
             return 
         
-        settings_manager.settings["bot"]["misc"]["activity"] = { # type: ignore
+        settings_manager.settings.bot.misc.activity = { # type: ignore
             "type": type,
             "content": ' '.join(string)
         }
@@ -63,10 +63,10 @@ class SongChanger(commands.Cog):
         await self.bot.change_presence(
             activity=discord.Activity(
                 type=activities.get(
-                    settings_manager.settings["bot"]["misc"]["activity"]["type"], # type: ignore
+                    settings_manager.settings.bot.misc.activity.type, # type: ignore
                     discord.ActivityType.unknown,
                 ),
-                name=settings_manager.settings["bot"]["misc"]["activity"]["content"],
+                name=settings_manager.settings.bot.misc.activity.content,
             )
         )
 

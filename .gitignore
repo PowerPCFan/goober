@@ -4,7 +4,6 @@ current_version.txt
 MEMORY_LOADED
 memory.json
 *.pkl
-memory.json
 venv/
 output.png
 .vscode/

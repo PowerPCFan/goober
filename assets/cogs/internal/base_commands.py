@@ -29,7 +29,7 @@ class BaseCommands(commands.Cog):
     async def help(self, ctx: commands.Context, layout: str = "h") -> None:
         embed: discord.Embed = discord.Embed(
             title=f"{'Bot Help'}",
-            description=f"{'List of commands grouped by category.'}. Do `{settings['bot']['prefix']}help v` to use a vertical layout",
+            description=f"{'List of commands grouped by category.'}. Do `{settings.bot.prefix}help v` to use a vertical layout",
             color=discord.Colour(0x000000),
         )
 
@@ -66,9 +66,7 @@ class BaseCommands(commands.Cog):
             category_descriptions[cog_name] = cog.description
 
         for category, commands_list in (command_categories | cog_commands).items():
-            commands_in_category: str = "\n".join(
-                [f"{settings['bot']['prefix']}**{command}**" for command in commands_list]
-            )
+            commands_in_category: str = "\n".join([f"{settings.bot.prefix}**{command}**" for command in commands_list])
             description = category_descriptions.get(category, 'No description')
             emoji = ""
             if "|" in description:
@@ -85,7 +83,7 @@ class BaseCommands(commands.Cog):
 
         embed: discord.Embed = discord.Embed(
             title="Pong!!",
-            description=f'{settings["bot"]["misc"]["ping_line"]}\n`{'Bot Latency:'}: {latency}ms`',
+            description=f'{settings.bot.misc.ping_line}\n`{'Bot Latency:'}: {latency}ms`',
             color=discord.Colour(0x000000),
         )
         embed.set_footer(
@@ -110,7 +108,7 @@ class BaseCommands(commands.Cog):
 
         embed.add_field(
             name='Name',
-            value=settings['name'],
+            value=settings.name,
             inline=False,
         )
 
@@ -119,7 +117,7 @@ class BaseCommands(commands.Cog):
 
     @commands.command()
     async def stats(self, ctx: commands.Context) -> None:
-        memory_file: str = settings["bot"]["active_memory"]
+        memory_file: str = settings.bot.active_memory
         file_size: int = os.path.getsize(memory_file)
 
         memory_info = psutil.virtual_memory()  # type: ignore
@@ -154,15 +152,15 @@ class BaseCommands(commands.Cog):
             ])
         )
 
-        with open(settings["splash_text_loc"], "r") as f:
+        with open(settings.splash_text_loc, "r") as f:
             splash_text = "".join(f.readlines())
 
         embed.add_field(
             name=f"{'Variable Info'}",
             value=f"""{"Name: {NAME} \nPrefix: {PREFIX} \nOwner ID: {ownerid}\nPing line: {PING_LINE} \nMemory Sharing Enabled: {showmemenabled} \nUser Training Enabled: {USERTRAIN_ENABLED}\nSong: {song} \nSplashtext: ```{splashtext}```".format(  # noqa: E501 somehow this is longer than 200 chars
-                NAME=settings["name"], PREFIX=settings["bot"]["prefix"], ownerid=settings["bot"]["owner_ids"][0],
-                PING_LINE=settings["bot"]["misc"]["ping_line"], showmemenabled=settings["bot"]["allow_show_mem_command"],
-                USERTRAIN_ENABLED=settings["bot"]["user_training"], song=settings["bot"]["misc"]["activity"]["content"],
+                NAME=settings.name, PREFIX=settings.bot.prefix, ownerid=settings.bot.owner_ids[0],
+                PING_LINE=settings.bot.misc.ping_line, showmemenabled=settings.bot.allow_show_mem_command,
+                USERTRAIN_ENABLED=settings.bot.user_training, song=settings.bot.misc.activity.content,
                 splashtext=splash_text
             )}""",
             inline=False,
@@ -185,10 +183,10 @@ class BaseCommands(commands.Cog):
     @requires_admin()
     @commands.command()
     async def mem(self, ctx: commands.Context) -> None:
-        if not settings["bot"]["allow_show_mem_command"]:
+        if not settings.bot.allow_show_mem_command:
             return
 
-        with open(settings["bot"]["active_memory"], "rb") as f:
+        with open(settings.bot.active_memory, "rb") as f:
             data: bytes = f.read()
 
         response = requests.post(
@@ -198,7 +196,7 @@ class BaseCommands(commands.Cog):
         )
 
         if response.status_code != 200:
-            with open(settings["bot"]["active_memory"], "rb") as f:
+            with open(settings.bot.active_memory, "rb") as f:
                 await send_message(ctx, file=discord.File(f))
                 return
 

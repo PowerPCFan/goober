@@ -35,7 +35,7 @@ class FileSync(commands.Cog):
 
         if self.mode == "s":
             await ctx.send(f"<@{self.peer_id}> FILE_TRANSFER_REQUEST")
-            await ctx.send(file=discord.File(settings["bot"]["active_memory"]))
+            await ctx.send(file=discord.File(settings.bot.active_memory))
             await ctx.send("File sent in this channel.")
 
         elif self.mode == "r":

@@ -114,15 +114,15 @@ class Example(commands.Cog):
     
         # Now you can use settings easily!
 
-        current_message = settings["intro"]["message"]
+        current_message = settings.intro.message
         await send_message(ctx, message=f"Current message: {current_message}")
 
         # Changing plugin settings
-        settings["intro"]["message"] = "brand new message!"
+        settings.intro.message = "brand new message!"
 
         settings_manager.set_plugin_setting(COG_NAME, settings)
 
-        new_message = settings["intro"]["message"]
+        new_message = settings.intro.message
         await send_message(ctx, message=f"New message: {new_message}")
 
 

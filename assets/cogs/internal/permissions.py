@@ -14,7 +14,7 @@ class PermissionManager(commands.Cog):
     @requires_admin()
     @commands.command()
     async def add_owner(self, ctx: commands.Context, member: discord.Member):
-        settings["bot"]["owner_ids"].append(member.id)
+        settings.bot.owner_ids.append(member.id)
         settings_manager.add_admin_log_event(
             {
                 "action": "add",
@@ -39,7 +39,7 @@ class PermissionManager(commands.Cog):
     @commands.command()
     async def remove_owner(self, ctx: commands.Context, member: discord.Member):
         try:
-            settings["bot"]["owner_ids"].remove(member.id)
+            settings.bot.owner_ids.remove(member.id)
             settings_manager.add_admin_log_event(
                 {
                     "action": "del",
@@ -65,7 +65,7 @@ class PermissionManager(commands.Cog):
     @requires_admin()
     @commands.command()
     async def blacklist_user(self, ctx: commands.Context, member: discord.Member):
-        settings["bot"]["blacklisted_users"].append(member.id)
+        settings.bot.blacklisted_users.append(member.id)
         settings_manager.add_admin_log_event(
             {
                 "action": "add",
@@ -89,7 +89,7 @@ class PermissionManager(commands.Cog):
     @commands.command()
     async def unblacklist_user(self, ctx: commands.Context, member: discord.Member):
         try:
-            settings["bot"]["blacklisted_users"].remove(member.id)
+            settings.bot.blacklisted_users.remove(member.id)
             settings_manager.add_admin_log_event(
                 {
                     "action": "del",

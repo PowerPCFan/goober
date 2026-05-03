@@ -22,7 +22,7 @@ class CogManager(commands.Cog):
         try:
             await self.bot.load_extension(COG_PREFIX + cog_name)
             await ctx.send(f"Loaded cog `{cog_name}` successfully.")
-            settings["bot"]["enabled_cogs"].append(cog_name)
+            settings.bot.enabled_cogs.append(cog_name)
             settings_manager.add_admin_log_event(
                 {
                     "action": "add",
@@ -74,7 +74,7 @@ class CogManager(commands.Cog):
         try:
             await self.bot.unload_extension(COG_PREFIX + cog_name)
             await ctx.send(f"Unloaded cog `{cog_name}` successfully.")
-            settings["bot"]["enabled_cogs"].remove(cog_name)
+            settings.bot.enabled_cogs.remove(cog_name)
             settings_manager.add_admin_log_event(
                 {
                     "action": "del",

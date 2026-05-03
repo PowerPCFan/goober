@@ -41,11 +41,11 @@ class Share(commands.Cog):
 
         settings: SettingsType = settings_manager.get_plugin_settings("share", default=default_settings) #type: ignore[assignment]
 
-        if link in settings["medias"]:
+        if link in settings.medias:
             await send_message(ctx, "Image is already in medias!")
             return
         
-        settings["medias"].append(link)
+        settings.medias.append(link)
         settings_manager.set_plugin_setting("share", settings)
         await send_message(ctx, message=f"Added media!")
 
@@ -63,11 +63,11 @@ class Share(commands.Cog):
 
         settings: SettingsType = settings_manager.get_plugin_settings("share", default=default_settings) #type: ignore[assignment]
 
-        if link not in settings["medias"]:
+        if link not in settings.medias:
             await send_message(ctx, "Image isn't in medias!")
             return
         
-        settings["medias"].remove(link)
+        settings.medias.remove(link)
         settings_manager.set_plugin_setting("share", settings)
 
         await send_message(ctx, message=f"Removed media!")
@@ -75,13 +75,13 @@ class Share(commands.Cog):
     @commands.command()
     async def send_media(self, ctx: commands.Context):
         settings: SettingsType = settings_manager.get_plugin_settings("share", default=default_settings) #type: ignore[assignment]
-        await send_message(ctx, random.choice(settings["medias"]))
+        await send_message(ctx, random.choice(settings.medias))
 
     @requires_admin()
     @commands.command()
     async def list_media(self, ctx: commands.Context):
         settings: SettingsType = settings_manager.get_plugin_settings("share", default=default_settings) #type: ignore[assignment]
-        message: str = "\n".join(settings["medias"])
+        message: str = "\n".join(settings.medias)
 
         await send_message(ctx, message)
 
@@ -89,10 +89,10 @@ class Share(commands.Cog):
     async def on_message(self, message: discord.Message):
         settings: SettingsType = settings_manager.get_plugin_settings("share", default=default_settings) #type: ignore[assignment]
 
-        if not settings["reacts"]: return
+        if not settings.reacts: return
 
-        if len(message.content) > 10 and random.randint(0, settings["chance"]) == 1:
-            await message.reply(random.choice(settings["medias"]))
+        if len(message.content) > 10 and random.randint(0, settings.chance) == 1:
+            await message.reply(random.choice(settings.medias))
 
 
 async def setup(bot):

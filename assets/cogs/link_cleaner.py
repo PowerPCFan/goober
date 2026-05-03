@@ -33,13 +33,13 @@ class LinkCleaner(commands.Cog):
     @commands.command()
     async def enable_automatic_cleaning(self, ctx: commands.Context, enabled: str | None):
         if enabled is None:
-            await ctx.send(f"Please use {settings_manager.settings['bot']['prefix']}enable_automatic_cleaning <yes | no>")
+            await ctx.send(f"Please use {settings_manager.settings.bot.prefix}enable_automatic_cleaning <yes | no>")
             return
         
         new_mode: bool = enabled.lower() == "yes"
 
         settings: LinkCleanerSettings = settings_manager.get_plugin_settings("link_cleaner", DEFAULT) # type: ignore
-        settings["automatic"] = new_mode
+        settings.automatic = new_mode
         
         if new_mode == True:
             await ctx.send("Enabled automatic link cleaning!")

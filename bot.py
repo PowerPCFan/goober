@@ -1,6 +1,5 @@
 import logging
 from modules.logger import GooberFormatter
-from modules import key_compiler
 import tracemalloc
 import os
 import time
@@ -17,10 +16,6 @@ from typing import (
     Optional,
     TypedDict
 )
-from modules.prestartchecks import start_checks
-import modules.keys as k
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
 from modules.settings import instance as settings_manager, ActivityType
 import discord
 from discord.ext import commands
@@ -47,34 +42,15 @@ logger.addHandler(file_handler)
 
 logger.info("Starting...")
 
-
-def build_keys():
-    logger.info("Building keys")
-    key_compiler.build_result(
-        "en",
-        "assets/locales",
-        types=True,
-        output_path="modules/keys.py",
-        generate_comments=True,
-    )
-    logger.info("Built keys!")
-
-
-build_keys()
-
 messages_recieved = 0
 
-
 settings = settings_manager.settings
-k.change_language(settings["locale"])
 
 splash_text: str = ""
 
-with open(settings["splash_text_loc"], "r", encoding="UTF-8") as f:
+with open(settings.splash_text_loc, "r", encoding="UTF-8") as f:
     splash_text = "".join(f.readlines())
     print(splash_text)
-
-start_checks()
 
 sys.excepthook = handle_exception
 tracemalloc.start()
@@ -94,7 +70,7 @@ class MessageMetadata(TypedDict):
 os.makedirs("data", exist_ok=True)
 
 # Constants with type hints
-positive_gifs: List[str] = settings["bot"]["misc"]["positive_gifs"]
+positive_gifs: List[str] = settings.bot.misc.positive_gifs
 currenthash: str = ""
 launched: bool = False
 slash_commands_enabled: bool = False
@@ -107,7 +83,7 @@ intents.presences = True
 intents.members = True
 
 bot: commands.Bot = commands.Bot(
-    command_prefix=settings["bot"]["prefix"],
+    command_prefix=settings.bot.prefix,
     intents=intents,
     allowed_mentions=discord.AllowedMentions(
         everyone=False, roles=False, users=False, replied_user=True
@@ -132,7 +108,7 @@ async def load_cogs_from_folder(bot: commands.Bot, folder_name="assets/cogs"):
 
         if (
             "internal" not in folder_name
-            and cog_name not in settings["bot"]["enabled_cogs"]
+            and cog_name not in settings.bot.enabled_cogs
         ):
             logger.debug(f"Skipping cog {cog_name} (not in enabled cogs)")
             continue
@@ -161,7 +137,7 @@ async def on_ready() -> None:
         synced: List[discord.app_commands.AppCommand] = await bot.tree.sync()
 
         logger.info(f"Synced {len(synced)} commands!")
-        logger.info(f"{settings['name']} has started!\nYou're the star of the show now baby!")
+        logger.info(f"{settings.name} has started!\nYou're the star of the show now baby!")
 
     except discord.errors.Forbidden as perm_error:
         logger.error(f"Permission error while syncing commands: {perm_error}")
@@ -172,7 +148,7 @@ async def on_ready() -> None:
         logger.error(f"Failed to sync commands: {e}")
         traceback.print_exc()
 
-    if not settings["bot"]["misc"]["activity"]["content"]:
+    if not settings.bot.misc.activity.content:
         return
 
     activities: Dict[ActivityType, discord.ActivityType] = {
@@ -186,10 +162,10 @@ async def on_ready() -> None:
     await bot.change_presence(
         activity=discord.Activity(
             type=activities.get(
-                settings["bot"]["misc"]["activity"]["type"],
+                settings.bot.misc.activity.type,
                 discord.ActivityType.unknown,
             ),
-            name=settings["bot"]["misc"]["activity"]["content"],
+            name=settings.bot.misc.activity.content,
         )
     )
     launched = True
@@ -283,7 +259,7 @@ async def on_message(message: discord.Message) -> None:
     if message.author.bot:
         return
 
-    if message.author.id in settings["bot"]["blacklisted_users"]:
+    if message.author.id in settings.bot.blacklisted_users:
         return
 
     await bot.process_commands(message)
@@ -291,11 +267,11 @@ async def on_message(message: discord.Message) -> None:
     if not message.content:
         return
 
-    if not settings["bot"]["user_training"]:
+    if not settings.bot.user_training:
         return
 
     if (
-        settings["bot"]["misc"]["block_profanity"]
+        settings.bot.misc.block_profanity
         and profanity.contains_profanity(message.content)
     ):
         return
@@ -341,7 +317,7 @@ async def on_interaction(interaction: discord.Interaction) -> None:
 # Global check: Block blacklisted users from running commands
 @bot.check
 async def block_blacklisted(ctx: commands.Context) -> bool:
-    if ctx.author.id not in settings["bot"]["blacklisted_users"]:
+    if ctx.author.id not in settings.bot.blacklisted_users:
         return True
 
     try:
@@ -364,39 +340,6 @@ def improve_sentence_coherence(sentence: str) -> str:
     sentence = sentence.replace(" i ", " I ")
     return sentence
 
-
-class OnMyWatch:
-    watchDirectory = "assets/locales"
-
-    def __init__(self):
-        self.observer = Observer()
-
-    def run(self):
-        event_handler = Handler()
-        self.observer.schedule(event_handler, self.watchDirectory, recursive=True)
-        self.observer.start()
-        try:
-            while True:
-                time.sleep(5)
-        except Exception:
-            self.observer.stop()
-            print("Observer Stopped")
-
-        self.observer.join()
-
-
-class Handler(FileSystemEventHandler):
-    def on_any_event(self, event):
-        if event.is_directory:
-            return None
-
-        elif event.event_type == "modified":
-            build_keys()
-
-
-observer = Observer()
-observer.schedule(Handler(), "assets/locales")
-observer.start()
 
 # Start the bot
 if __name__ == "__main__":

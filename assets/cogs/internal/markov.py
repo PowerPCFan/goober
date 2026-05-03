@@ -51,7 +51,7 @@ class Markov(commands.Cog):
             return
 
         try:
-            with open(settings["bot"]["active_memory"], "r") as f:
+            with open(settings.bot.active_memory, "r") as f:
                 memory: List[str] = json.load(f)
         except FileNotFoundError:
             await send_message(ctx, f"{'Error: memory file not found!'}")
@@ -111,7 +111,7 @@ class Markov(commands.Cog):
         coherent_response: str = rephrase_for_coherence(cleaned_response)
 
         if random.random() < 0.9 and is_positive(coherent_response):
-            gif_url: str = random.choice(settings["bot"]["misc"]["positive_gifs"])
+            gif_url: str = random.choice(settings.bot.misc.positive_gifs)
 
             coherent_response = f"{coherent_response}\n[jif]({gif_url})"
 

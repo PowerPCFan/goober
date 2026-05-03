@@ -399,12 +399,12 @@ class Converter(commands.Cog):
             await send_message(ctx, "Please specify a word!")
             return
         
-        if word in settings["blacklisted_words"]:
+        if word in settings.blacklisted_words
             await send_message(ctx, "Word is already blacklisted!")
             return
         
         
-        settings["blacklisted_words"].append(word or "")
+        settings.blacklisted_words.append(word or "")
 
         settings_manager.set_plugin_setting("converter", settings)
         await send_message(ctx, f"Blacklisted {word}!")
@@ -419,12 +419,12 @@ class Converter(commands.Cog):
             await send_message(ctx, "Please specify a word!")
             return
         
-        if word not in settings["blacklisted_words"]:
+        if word not in settings.blacklisted_words:
             await send_message(ctx, "Word has not been blacklisted!")
             return
         
         
-        settings["blacklisted_words"].remove(word)
+        settings.blacklisted_words.remove(word)
 
         settings_manager.set_plugin_setting("converter", settings)
         await send_message(ctx, f"Whitelisted {word}!")

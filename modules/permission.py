@@ -14,7 +14,7 @@ class PermissionError(Exception):
 
 
 def is_admin(id: int) -> bool:
-    return id in settings["bot"]["owner_ids"]
+    return id in settings.bot.owner_ids
 
 
 def requires_admin():
@@ -30,7 +30,7 @@ def requires_admin():
             logger.info(f"Unknown command ran {ctx.message}")
         else:
             logger.info(
-                f'Command {settings["bot"]["prefix"]}{command.name} @{ctx.author.name}'
+                f'Command {settings.bot.prefix}{command.name} @{ctx.author.name}'
             )
         return True
 

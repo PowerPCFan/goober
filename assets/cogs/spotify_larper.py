@@ -20,7 +20,7 @@ class SettingsType(TypedDict):
     followed_user: int
 
 default_settings: SettingsType = {
-    "followed_user": settings_manager.settings["bot"]["owner_ids"][0]
+    "followed_user": settings_manager.settings.bot.owner_ids[0]
 }
 
 class SpotifyLarper(commands.Cog): 
@@ -36,7 +36,7 @@ class SpotifyLarper(commands.Cog):
     @commands.command()
     async def follow(self, ctx: commands.Context, user: discord.Member):
         settings: SettingsType = settings_manager.get_plugin_settings("spotify_larper", default_settings) # type: ignore
-        settings["followed_user"] = user.id
+        settings.followed_user = user.id
         settings_manager.set_plugin_setting("spotify_larper", settings)
 
         await send_message(ctx, f"Changed followed user to {user.mention}")
@@ -55,7 +55,7 @@ class SpotifyLarper(commands.Cog):
     async def on_presence_update(self, before: discord.Member, after: discord.Member) -> None:
         settings: SettingsType = settings_manager.get_plugin_settings("spotify_larper", default_settings) # type: ignore
         
-        if after.id != settings["followed_user"]:
+        if after.id != settings.followed_user:
             return
         
 

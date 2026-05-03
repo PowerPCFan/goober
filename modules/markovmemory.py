@@ -30,10 +30,10 @@ def load_memory():
 
     # Try to load data from MEMORY_FILE
     try:
-        with open(settings["bot"]["active_memory"], "r") as f:
+        with open(settings.bot.active_memory, "r") as f:
             data = json.load(f)
     except FileNotFoundError:
-        with open(settings["bot"]["active_memory"], "w") as f:
+        with open(settings.bot.active_memory, "w") as f:
             json.dump([], f)
             data = []
 
@@ -42,7 +42,7 @@ def load_memory():
 
 # Save memory data to MEMORY_FILE
 def save_memory(memory):
-    with open(settings["bot"]["active_memory"], "w") as f:
+    with open(settings.bot.active_memory, "w") as f:
         json.dump(memory, f, indent=4)
 
 
@@ -66,7 +66,7 @@ def train_markov_model(memory, additional_data=None) -> markovify.NewlineText | 
 
 # Save the Markov model to a pickle file
 def save_markov_model(model):
-    filename = settings["bot"]["active_model"]
+    filename = settings.bot.active_model
 
     with open(filename, "wb") as f:
         pickle.dump(model, f)
@@ -76,7 +76,7 @@ def save_markov_model(model):
 # Load the Markov model from a pickle file
 def load_markov_model():
     global model
-    filename = settings["bot"]["active_model"]
+    filename = settings.bot.active_model
 
     if not model:
         try:
