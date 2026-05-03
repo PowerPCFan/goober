@@ -13,6 +13,7 @@ import cpuinfo
 import sys
 import platform
 import logging
+from modules.sync_connector import instance as synchub
 
 settings = settings_manager.settings
 
@@ -44,13 +45,15 @@ class BaseCommands(commands.Cog):
                 "help",
             ],
             "Administration": ["stats", "retrain", "setlanguage", "add_owner", "remove_owner", "blacklist_user", "unblacklist_user", "restart", "force_update"],
-            "Cog management": ["enable", "load", "unload", "disable", "reload", "listcogs"]
+            "Cog management": ["enable", "load", "unload", "disable", "reload", "listcogs"],
+            "Synchub": ["synchub_test", "synchub_connect", "synchub_stats"]
         }
 
         cog_commands: Dict[str, List[str]] = {}
         category_descriptions: Dict[str, str] = {
             "Administration": "🛠️|Commands meant for stuff like stuff",
             "Cog management": "💼|Commands for managing cogs",
+            "Synchub": "📨|Commands for managing Sync hub",
             "General": "🌐|General commands for stuff"
         }
 
@@ -152,6 +155,12 @@ class BaseCommands(commands.Cog):
             ])
         )
 
+        embed.add_field(
+            name="Sync hub",
+            value=f"Connected: {synchub.connected}, URL: {synchub.url}",
+            inline=False,
+        )
+
         with open(settings.splash_text_loc, "r") as f:
             splash_text = "".join(f.readlines())
 
@@ -201,6 +210,31 @@ class BaseCommands(commands.Cog):
                 return
 
         await send_message(ctx, response.text)
+
+    @requires_admin()
+    @commands.command()
+    async def synchub_test(self, ctx: commands.Context, message_id: str | None) -> None:
+        message_id = message_id or "0"
+        status = synchub.can_react(int(message_id), 0)
+
+        await send_message(ctx, f"Allowed to react to message {message_id}? {'yes' if status else 'no'} (connection to {settings.bot.sync_hub.url} active? {'yes' if synchub.connected else 'no'})")
+
+    @requires_admin()
+    @commands.command()
+    async def synchub_connect(self, ctx: commands.Context) -> None:
+        await send_message(ctx, "Trying to connect...")
+
+        connected = synchub.try_to_connect()
+        if connected:
+            await send_message(ctx, "Succesfully connected to sync hub!")
+        else:
+            await send_message(ctx, "Failed to connect to sync hub")
+
+    @requires_admin()
+    @commands.command()
+    async def synchub_stats(self, ctx: commands.Context) -> None:
+        connected = synchub.get_connected()
+        await ctx.send(connected)
 
 
 async def setup(bot: discord.ext.commands.Bot):

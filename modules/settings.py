@@ -11,6 +11,12 @@ ActivityType = Literal["listening", "playing", "streaming", "competing", "watchi
 
 
 @dataclass
+class SyncHub:
+    url: str
+    enabled: bool
+
+
+@dataclass
 class Activity:
     content: str
     type: ActivityType
@@ -36,6 +42,7 @@ class BotSettings:
     enabled_cogs: list[str]
     active_memory: str
     active_model: str
+    sync_hub: SyncHub
 
 
 @dataclass
@@ -75,6 +82,7 @@ def _build_settings(data: Mapping[str, Any]) -> SettingsType:
         enabled_cogs=list(bot_data["enabled_cogs"]),
         active_memory=str(bot_data["active_memory"]),
         active_model=str(bot_data["active_model"]),
+        sync_hub=SyncHub(**bot_data["sync_hub"])
     )
 
     return SettingsType(

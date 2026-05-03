@@ -6,6 +6,7 @@ from typing import Dict, TypedDict, Any, List
 from modules.settings import instance as settings_manager
 from modules.permission import requires_admin
 from modules.sentenceprocessing import send_message
+from modules.sync_connector import instance as synchub
 import random
 from copy import copy
 import logging
@@ -359,6 +360,9 @@ class Converter(commands.Cog):
         settings: SettingsType = settings_manager.get_plugin_settings("converter", default_settings)  # type: ignore[assignment]
 
         if message.author.bot:
+            return
+
+        if not synchub.can_convert(message.id, message.channel.id):
             return
 
         found_units_dict: Dict[int, ConvertedValue] = {}
