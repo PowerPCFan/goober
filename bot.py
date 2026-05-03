@@ -8,14 +8,7 @@ import traceback
 import tempfile
 import shutil
 import sys
-from typing import (
-    List,
-    Dict,
-    Literal,
-    Set,
-    Optional,
-    TypedDict
-)
+from typing import Literal, Set, Optional, TypedDict
 from modules.settings import instance as settings_manager, ActivityType
 import discord
 from discord.ext import commands
@@ -70,7 +63,7 @@ class MessageMetadata(TypedDict):
 os.makedirs("data", exist_ok=True)
 
 # Constants with type hints
-positive_gifs: List[str] = settings.bot.misc.positive_gifs
+positive_gifs: list[str] = settings.bot.misc.positive_gifs
 currenthash: str = ""
 launched: bool = False
 slash_commands_enabled: bool = False
@@ -91,7 +84,7 @@ bot: commands.Bot = commands.Bot(
 )
 
 # Load memory and Markov model for text generation
-memory: List[str | Dict[Literal["_meta"], MessageMetadata]] = load_memory()
+memory: list[str | dict[Literal["_meta"], MessageMetadata]] = load_memory()
 markov_model: markovify.Text | None = load_markov_model()
 if not markov_model:
     logger.error('Markov model not found!')
@@ -134,7 +127,7 @@ async def on_ready() -> None:
     await load_cogs_from_folder(bot, "assets/cogs/internal")
     await load_cogs_from_folder(bot)
     try:
-        synced: List[discord.app_commands.AppCommand] = await bot.tree.sync()
+        synced: list[discord.app_commands.AppCommand] = await bot.tree.sync()
 
         logger.info(f"Synced {len(synced)} commands!")
         logger.info(f"{settings.name} has started!\nYou're the star of the show now baby!")
@@ -151,7 +144,7 @@ async def on_ready() -> None:
     if not settings.bot.misc.activity.content:
         return
 
-    activities: Dict[ActivityType, discord.ActivityType] = {
+    activities: dict[ActivityType, discord.ActivityType] = {
         "listening": discord.ActivityType.listening,
         "playing": discord.ActivityType.playing,
         "streaming": discord.ActivityType.streaming,
@@ -192,61 +185,6 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError) 
             error.__traceback__,
             context=f"Command: {ctx.command} | User: {ctx.author}",
         )
-
-
-# New demotivator command
-@bot.hybrid_command(description="Generate a demotivator poster with two lines of text")
-async def demotivator(ctx: commands.Context) -> None:
-    assets_folder: str = "assets/images"
-    temp_input: str | None = None
-
-    def get_random_asset_image() -> Optional[str]:
-        files: List[str] = [
-            f
-            for f in os.listdir(assets_folder)
-            if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
-        ]
-        if not files:
-            return None
-        return os.path.join(assets_folder, random.choice(files))
-
-    if ctx.message.attachments:
-        attachment: discord.Attachment = ctx.message.attachments[0]
-        if attachment.content_type and attachment.content_type.startswith("image/"):
-            ext: str = os.path.splitext(attachment.filename)[1]
-            temp_input = f"tempy{ext}"
-            with open(temp_input, "wb") as f:
-                await attachment.save(f)
-            input_path: str = temp_input
-        else:
-            fallback_image: Optional[str] = get_random_asset_image()
-            if fallback_image is None:
-                await ctx.reply('No images available!')
-                return
-            temp_input = tempfile.mktemp(suffix=os.path.splitext(fallback_image)[1])
-            shutil.copy(fallback_image, temp_input)
-            input_path = temp_input
-    else:
-        fallback_image = get_random_asset_image()
-        if fallback_image is None:
-            await ctx.reply('No images available!')
-            return
-        temp_input = tempfile.mktemp(suffix=os.path.splitext(fallback_image)[1])
-        shutil.copy(fallback_image, temp_input)
-        input_path = temp_input
-
-    output_path: Optional[str] = await gen_demotivator(input_path)
-
-    if output_path is None or not os.path.isfile(output_path):
-        if temp_input and os.path.exists(temp_input):
-            os.remove(temp_input)
-        await ctx.reply("Failed to generate demotivator.")
-        return
-
-    await ctx.send(file=discord.File(output_path))
-
-    if temp_input and os.path.exists(temp_input):
-        os.remove(temp_input)
 
 
 # Event: Called on every message

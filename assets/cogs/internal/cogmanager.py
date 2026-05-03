@@ -1,7 +1,5 @@
 import discord
 from discord.ext import commands
-import discord.ext
-import discord.ext.commands
 from modules.permission import requires_admin
 from modules.settings import instance as settings_manager
 from modules.globalvars import available_cogs
@@ -94,7 +92,7 @@ class CogManager(commands.Cog):
         if cog_name is None:
             await ctx.send("Please provide the cog name to reload.")
             return
-        
+
         try:
             await self.bot.unload_extension(COG_PREFIX + cog_name)
             await self.bot.load_extension(COG_PREFIX + cog_name)
@@ -104,7 +102,6 @@ class CogManager(commands.Cog):
 
     @commands.command()
     async def listcogs(self, ctx):
-        """Lists all currently loaded cogs in an embed."""
         cogs = list(self.bot.cogs.keys())
         if not cogs:
             await ctx.send("No cogs are currently loaded.")
@@ -115,7 +112,7 @@ class CogManager(commands.Cog):
             description="Here is a list of all currently loaded cogs:",
         )
         embed.add_field(name="Loaded cogs", value="\n".join(cogs), inline=False)
-        embed.add_field(name="Available cogs", value="\n".join(available_cogs()))
+        embed.add_field(name="Available cogs", value="\n".join(available_cogs))
         await ctx.send(embed=embed)
 
 

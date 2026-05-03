@@ -2,12 +2,12 @@ import discord
 from discord.ext import commands
 
 
-class whoami(commands.Cog):
-    def __init__(self, bot):
+class WhoAmI(commands.Cog):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @commands.command()
-    async def whoami(self, ctx):
+    async def whoami(self, ctx: commands.Context):
         user_id = ctx.author.id
         username = ctx.author.name
 
@@ -22,5 +22,5 @@ class whoami(commands.Cog):
         await ctx.send(embed=embed)
 
 
-async def setup(bot):
-    await bot.add_cog(whoami(bot))
+async def setup(bot: commands.Bot):
+    await bot.add_cog(WhoAmI(bot))

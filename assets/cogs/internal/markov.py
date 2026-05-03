@@ -4,9 +4,6 @@ import re
 import discord
 from discord.ext import commands
 
-import discord.ext
-import discord.ext.commands
-
 from modules.markovmemory import (
     load_markov_model,
     save_markov_model,
@@ -19,29 +16,26 @@ from modules.sentenceprocessing import (
     rephrase_for_coherence,
     send_message,
 )
-import modules.keys as k
 import logging
-from typing import List, Optional, Set
 import json
 import time
 import markovify
-
+from modules.settings import instance as settings_manager
 
 logger = logging.getLogger("goober")
-from modules.settings import instance as settings_manager
 
 settings = settings_manager.settings
 
 
 class Markov(commands.Cog):
     def __init__(self, bot):
-        self.bot: discord.ext.commands.Bot = bot
+        self.bot: commands.Bot = bot
 
         self.model: markovify.NewlineText | None = load_markov_model()
 
     @requires_admin()
     @commands.command()
-    async def retrain(self, ctx: discord.ext.commands.Context):
+    async def retrain(self, ctx: commands.Context):
         message_ref: discord.Message | None = await send_message(
             ctx, f"{'Retraining the Markov model... Please wait.'}"
         )
@@ -52,7 +46,7 @@ class Markov(commands.Cog):
 
         try:
             with open(settings.bot.active_memory, "r") as f:
-                memory: List[str] = json.load(f)
+                memory: list[str] = json.load(f)
         except FileNotFoundError:
             await send_message(ctx, f"{'Error: memory file not found!'}")
             return
@@ -79,13 +73,13 @@ class Markov(commands.Cog):
         self.model = model
         save_markov_model(self.model)
 
-        logger.debug(f"Completed retraining in {round(time.time() - start_time,3)}s")
+        logger.debug(f"Completed retraining in {round(time.time() - start_time, 3)}s")
 
         await send_message(
             ctx,
             f"Markov model retrained successfully using {data_size} data points!",
             edit=True,
-            message_reference=processing_message_ref,
+            # message_reference=processing_message_ref,
         )
 
     @commands.command()
