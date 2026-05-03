@@ -1,4 +1,0 @@
-- fix missing translations in some cases
-- revamp wiki
-- clean the rest
-- alot
