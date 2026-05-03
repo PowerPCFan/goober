@@ -20,15 +20,27 @@ def check_resources():
         logging.critical('The spaCy model was not found! Downloading it....`')
         spacy.cli.download("en_core_web_sm")  # type: ignore
         nlp = spacy.load("en_core_web_sm")
+    try:
+        from spacytextblob.spacytextblob import SpacyTextBlob  # noqa: F401
+    except Exception as exc:
+        logger.error("spacytextblob is not available: %s", exc)
+        return
+
     if "spacytextblob" not in nlp.pipe_names:
-        nlp.add_pipe("spacytextblob")
-    logger.info('spaCy and spacytextblob are ready.')
+        try:
+            nlp.add_pipe("spacytextblob")
+        except ValueError as exc:
+            logger.error("Failed to add spacytextblob: %s", exc)
+            return
+
+    if not Doc.has_extension("polarity"):
+        Doc.set_extension("polarity", getter=lambda doc: doc._.blob.polarity)
+
+    logger.info("spaCy and spacytextblob are ready.")
 
 
 nlp_thread = threading.Thread(target=check_resources)
 nlp_thread.start()
-
-Doc.set_extension("polarity", getter=lambda doc: doc._.blob.polarity)
 
 
 def is_positive(sentence):
@@ -44,9 +56,7 @@ def is_positive(sentence):
     debug_message = f"{'Positivity of sentence is:'} {sentiment_score}{RESET}"
     logger.debug(debug_message)
 
-    return (
-        sentiment_score > 0.6
-    )  # had to raise the bar because it kept saying "death to jews" was fine and it kept reacting to them
+    return (sentiment_score > 0.6)
 
 
 async def send_message(

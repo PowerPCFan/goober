@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from modules.logger import GooberFormatter
 import tracemalloc
 import os
@@ -11,6 +12,7 @@ import discord
 from discord.ext import commands
 from better_profanity import profanity
 import markovify
+from modules.sync_connector import instance as synchub
 from modules.markovmemory import load_memory, load_markov_model, save_memory, train_markov_model
 from modules.sentenceprocessing import append_mentions_to_18digit_integer, preprocess_message
 from modules.unhandledexception import handle_exception, handle_exception_with_context
@@ -18,8 +20,11 @@ from modules.unhandledexception import handle_exception, handle_exception_with_c
 logger = logging.getLogger("goober")
 logger.setLevel(logging.DEBUG)
 
+level_name = settings_manager.settings.bot.log_level.upper()
+console_level = logging._nameToLevel.get(level_name, logging.INFO)
+
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
+console_handler.setLevel(console_level)
 console_handler.setFormatter(GooberFormatter())
 
 file_handler = logging.FileHandler("log.txt", mode="w+", encoding="UTF-8")
@@ -35,11 +40,8 @@ messages_recieved = 0
 
 settings = settings_manager.settings
 
-splash_text: str = ""
-
-with open(settings.splash_text_loc, "r", encoding="UTF-8") as f:
-    splash_text = "".join(f.readlines())
-    print(splash_text)
+splash_text = Path(settings.splash_text_loc).read_text(encoding="UTF-8")
+print(splash_text)
 
 sys.excepthook = handle_exception
 tracemalloc.start()
@@ -87,6 +89,10 @@ if not markov_model:
     memory = load_memory()
     markov_model = train_markov_model(memory)
 
+
+# connect to synchub
+synchub.try_to_connect()
+
 generated_sentences: Set[str] = set()
 used_words: Set[str] = set()
 
@@ -126,7 +132,7 @@ async def on_ready() -> None:
         synced: list[discord.app_commands.AppCommand] = await bot.tree.sync()
 
         logger.info(f"Synced {len(synced)} commands!")
-        logger.info(f"{settings.name} has started!\nYou're the star of the show now baby!")
+        logger.info(f"{settings.name} has started! You're the star of the show now baby!")
 
     except discord.errors.Forbidden as perm_error:
         logger.error(f"Permission error while syncing commands: {perm_error}")

@@ -4,47 +4,31 @@ import discord.ext
 import discord.ext.commands
 import math
 import time
-from modules.permission import requires_admin
 from modules.sentenceprocessing import send_message
 from modules.settings import instance as settings_manager
-from typing import TypedDict, Dict
+from typing import TypedDict
 import requests_async
 import logging
 import datetime
 
 
-# todo: finish making this work with my climate thingy
-
-
 class SettingsType(TypedDict):
     latitude: float
-    longtitude: float
+    longitude: float
 
 
 default_settings: SettingsType = {
     "latitude": 30,
-    "longtitude": 0
+    "longitude": 0
 }
 
 
-class IndoorData(TypedDict):
-    temperature: float
-    relative_humidity: float
-    air_pressure: float
-    air_resistance: float
-    sensor_calibrated: bool
-    temperature_offset: float
-    scd40_temp: float
-    scd40_humidity: float
-    carbon_dioxide: int
-    last_update: float
-
-class TresholdValue(TypedDict):
+class ThresholdValue(TypedDict):
     label: str
     emoji: str
 
-# for example: 600 would be 600 up until 800
-CO2_TRESHOLDS: Dict[int, TresholdValue] = {
+
+CO2_THRESHOLDS: dict[int, ThresholdValue] = {
     400: {
         "label": "Great",
         "emoji": "🔵"
@@ -71,7 +55,7 @@ CO2_TRESHOLDS: Dict[int, TresholdValue] = {
     }
 }
 
-TEMP_TRESHOLDS: Dict[int, TresholdValue] = {
+TEMP_THRESHOLDS: dict[int, ThresholdValue] = {
     16: {
         "label": "Cold",
         "emoji": "🔵"
@@ -90,7 +74,7 @@ TEMP_TRESHOLDS: Dict[int, TresholdValue] = {
     }
 }
 
-HUMIDITY_TRESHOLDS: Dict[int, TresholdValue] = {
+HUMIDITY_THRESHOLDS: dict[int, ThresholdValue] = {
     0: {
         "label": "Too dry",
         "emoji": "🟡"
@@ -105,7 +89,7 @@ HUMIDITY_TRESHOLDS: Dict[int, TresholdValue] = {
     }
 }
 
-RESISTANCE_TRESHOLDS: Dict[int, TresholdValue] = {
+RESISTANCE_THRESHOLDS: dict[int, ThresholdValue] = {
     20_000: {
         "label": "Bad",
         "emoji": "🟡"
@@ -120,7 +104,7 @@ RESISTANCE_TRESHOLDS: Dict[int, TresholdValue] = {
     }
 }
 
-PM25_TRESHOLDS: Dict[int, TresholdValue] = {
+PM25_THRESHOLDS: dict[int, ThresholdValue] = {
     0: {
         "label": "Excellent",
         "emoji": "🔵"
@@ -143,8 +127,7 @@ PM25_TRESHOLDS: Dict[int, TresholdValue] = {
     }
 }
 
-
-PM100_TRESHOLDS: Dict[int, TresholdValue] = {
+PM100_THRESHOLDS: dict[int, ThresholdValue] = {
     0: {
         "label": "Excellent",
         "emoji": "🔵"
@@ -167,7 +150,7 @@ PM100_TRESHOLDS: Dict[int, TresholdValue] = {
     }
 }
 
-OUTDOOR_TEMP_TRESHOLDS: Dict[int, TresholdValue] = {
+OUTDOOR_TEMP_THRESHOLDS: dict[int, ThresholdValue] = {
     -50: {
         "label": "Extremely frigid",
         "emoji": "⚫"
@@ -203,7 +186,7 @@ OUTDOOR_TEMP_TRESHOLDS: Dict[int, TresholdValue] = {
     10: {
         "label": "Mild",
         "emoji": "🟢"
-    }, 
+    },
     15: {
         "label": "Warm",
         "emoji": "🟡"
@@ -222,7 +205,7 @@ OUTDOOR_TEMP_TRESHOLDS: Dict[int, TresholdValue] = {
     }
 }
 
-OUTDOOR_HUMIDITY_TRESHOLDS: Dict[int, TresholdValue] = {
+OUTDOOR_HUMIDITY_THRESHOLDS: dict[int, ThresholdValue] = {
     0: {
         "label": "Extremely dry",
         "emoji": "🟠"
@@ -257,7 +240,7 @@ OUTDOOR_HUMIDITY_TRESHOLDS: Dict[int, TresholdValue] = {
     }
 }
 
-SUN_POSITION_TRESHOLD: Dict[int, TresholdValue] = {
+SUN_POSITION_THRESHOLD: dict[int, ThresholdValue] = {
     -100: {
         "label": "Night",
         "emoji": "🌌"
@@ -284,7 +267,7 @@ SUN_POSITION_TRESHOLD: Dict[int, TresholdValue] = {
     }
 }
 
-PRESSURE_TRESHOLS: Dict[int, TresholdValue] = {
+PRESSURE_THRESHOLDS: dict[int, ThresholdValue] = {
     900: {
         "label": "Extremely low pressure",
         "emoji": "🔴"
@@ -295,7 +278,7 @@ PRESSURE_TRESHOLS: Dict[int, TresholdValue] = {
     },
     995: {
         "label": "Low pressure",
-        "emoji":  "🟡"
+        "emoji": "🟡"
     },
     1005: {
         "label": "Normal pressure",
@@ -313,63 +296,65 @@ PRESSURE_TRESHOLS: Dict[int, TresholdValue] = {
 
 logger = logging.getLogger("goober")
 
+
+class Indoor(TypedDict):
+    time: str
+    temperature: float
+    humidity: float
+    pressure: float
+    gas: float
+    pm1_0: float
+    pm2_5: float
+    pm10_0: float
+    vocs: float
+    carbon_dioxide: float
+    wifi_strength: float
+    aqi: int
+
+
 class Climate(commands.Cog):
     def __init__(self, bot: discord.ext.commands.Bot):
         self.bot: discord.ext.commands.Bot = bot
         self.description = "🌱|Monitor my indoor and outdoor climates"
 
-    def get_ranking(self, current_value: float, tresholds: Dict[int, TresholdValue]) -> TresholdValue:
-        """
-        Gets the ranking (e.g good, bad, dangerous) for a given value
-        """
-        found_treshold: TresholdValue = {
+    def get_ranking(self, current_value: float, thresholds: dict[int, ThresholdValue]) -> ThresholdValue:
+        found_threshold: ThresholdValue = {
             "emoji": "",
             "label": ""
         }
 
-        for value, treshold in sorted(tresholds.items(), key=lambda item: item[0]):
+        for value, threshold in sorted(thresholds.items(), key=lambda item: item[0]):
             logger.info(str(current_value) + " " + str(value))
             if current_value < value:
                 break
 
-            found_treshold = treshold
+            found_threshold = threshold
 
-        return found_treshold
+        return found_threshold
 
-    def format_embed(self, label: str, unit: str, value: float, treshold: Dict[int, TresholdValue]) -> dict:
-        ranking = self.get_ranking(value, treshold)
+    def format_embed(self, label: str, unit: str, value: float, threshold: dict[int, ThresholdValue]) -> dict:
+        ranking = self.get_ranking(value, threshold)
         return {
             "name": f"{label} {ranking['emoji']}",
             "value": f"{round(value, 2)} {unit} (**{ranking['label']}**)"
         }
-
-    def parse_prometheus_format(self, lines: str) -> dict:
-        data = {}
-        for line in lines.split("\n"):
-            if line.startswith("#"): continue
-            if len(line) < 3: continue
-            key, value = line.split(" ")
-
-            data[key.strip()] = float(value.strip())
-
-        return data
 
     def get_sun_angle(self) -> float:
         settings: SettingsType = settings_manager.get_plugin_settings("climate", default_settings)  # type: ignore
 
         now = datetime.datetime.now()
         hour = now.hour + now.minute / 60 + now.second / 3600
-        solar_hour = hour + (settings.longtitude - 45) / 15
+        solar_hour = hour + (settings["longitude"] + 60) / 15  # +60 for UTC-4 timezone
         nth_day_of_year = (now - datetime.datetime(now.year, 1, 1)).days + 1
         declination = math.radians(23.445 * math.sin(math.radians((360 / 365.25) * (nth_day_of_year - 81))))
         hour_angle = math.radians(15 * (solar_hour - 12))
 
         result = math.degrees(math.asin(
-            math.sin(declination) *
-            math.sin(math.radians(settings.latitude)) +
-            math.cos(declination) *
-            math.cos(math.radians(settings.latitude)) *
-            math.cos(hour_angle)
+            math.sin(declination)
+            * math.sin(math.radians(settings["latitude"]))
+            + math.cos(declination)
+            * math.cos(math.radians(settings["latitude"]))
+            * math.cos(hour_angle)
         ))
 
         if result > -1.0:
@@ -381,57 +366,32 @@ class Climate(commands.Cog):
     @commands.command()
     async def indoors(self, ctx: commands.Context):
         res = await requests_async.get("http://192.168.1.45:8080/latest/indoor")
-        data: IndoorData = res.json()
+        data: Indoor = res.json()
 
         embed = discord.Embed(
             title="Climate data",
             description="Information about my indoor climate"
         )
 
-        calculated_temp: float = data['scd40_temp'] - data['temperature_offset']
-        air_humidity: float = (data["scd40_humidity"] + data["relative_humidity"]) / 2
+        isotime = str(data.get("time", "1970-01-01T00:00:00+00:00"))
+        try:
+            timestamp = int(datetime.datetime.fromisoformat(isotime).timestamp())
+        except ValueError:
+            timestamp = 0
 
-        embed.add_field(**self.format_embed("CO2", "PPM", data['carbon_dioxide'], CO2_TRESHOLDS))
-        embed.add_field(**self.format_embed("Temperature", "°C", calculated_temp, TEMP_TRESHOLDS))
-        embed.add_field(**self.format_embed("Relative Humidity", "%", air_humidity, HUMIDITY_TRESHOLDS))
-        embed.add_field(**self.format_embed("Air Resistance", "Ω", data['air_resistance'], RESISTANCE_TRESHOLDS))
+        embed.add_field(**self.format_embed("CO2", "PPM", data['carbon_dioxide'], CO2_THRESHOLDS))
+        embed.add_field(**self.format_embed("Temperature", "°F", data["temperature"] * 9/5 + 32, TEMP_THRESHOLDS))
+        embed.add_field(**self.format_embed("Humidity", "%RH", data["humidity"], HUMIDITY_THRESHOLDS))
+        embed.add_field(**self.format_embed("Gas", "kΩ", data['gas'], RESISTANCE_THRESHOLDS))
+        embed.add_field(**self.format_embed("Pressure", "inHg", data['pressure'] * 0.02953, PRESSURE_THRESHOLDS))
+        embed.add_field(**self.format_embed("PM1.0", "µg/m³", data['pm1_0'], PM25_THRESHOLDS))
+        embed.add_field(**self.format_embed("PM2.5", "µg/m³", data['pm2_5'], PM25_THRESHOLDS))
+        embed.add_field(**self.format_embed("PM10.0", "µg/m³", data['pm10_0'], PM100_THRESHOLDS))
 
-        embed.set_footer(text=f"Last updated: {time.strftime('%H:%M:%S %d/%m/%Y', time.gmtime(data['last_update']))} (UTC)")
-
-        await send_message(ctx, embed=embed)
-
-    @commands.command()
-    async def outdoors(self, ctx: commands.Context):
-        res = await requests_async.get("http://192.168.32.2:7777/metrics")
-        data = self.parse_prometheus_format(res.text)
-
-        indoor_data = await requests_async.get("http://192.168.32.88:7778/data")
-
-        embed = discord.Embed(
-            title="Climate data",
-            description=f"Information about my outdoor climate"
-        )
-
-        pressure = indoor_data.json()["air_pressure"] * math.pow((1 - 119/44330), -5.225) 
-
-        embed.add_field(**self.format_embed("PM2.5", "µg/m³", data["mc2p5"], PM25_TRESHOLDS))
-        embed.add_field(**self.format_embed("PM10.0", "µg/m³", data["mc10p0"], PM100_TRESHOLDS))
-        embed.add_field(**self.format_embed("Temperature", "°C", data["temp"], OUTDOOR_TEMP_TRESHOLDS))
-        embed.add_field(**self.format_embed("Relative Humidity", "%", data["humidity"], OUTDOOR_HUMIDITY_TRESHOLDS))
-        embed.add_field(**self.format_embed("Air Pressure", "hPa", pressure, PRESSURE_TRESHOLS))
-        embed.add_field(**self.format_embed("Sun angle", "°", self.get_sun_angle(), SUN_POSITION_TRESHOLD))
+        embed.set_footer(text=f"Last updated: {time.strftime('%H:%M:%S %d/%m/%Y', time.gmtime(timestamp))} (UTC)")
 
         await send_message(ctx, embed=embed)
 
-    @requires_admin()
-    @commands.command()
-    async def set_coords(self, ctx: commands.Context, latitude: float, longtitude: float):
-        settings: SettingsType = settings_manager.get_plugin_settings("climate", default_settings) # type: ignore
-        settings.latitude = latitude
-        settings.longtitude = longtitude
-        settings_manager.set_plugin_setting("climate", settings)
 
-        await send_message(ctx, "Saved coordinates!")
-
-async def setup(bot):
+async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Climate(bot))

@@ -33,6 +33,7 @@ class MiscBotOptions:
 @dataclass
 class BotSettings:
     prefix: str
+    log_level: str
     owner_ids: list[int]
     blacklisted_users: list[int]
     user_training: bool
@@ -68,6 +69,7 @@ def _build_settings(data: Mapping[str, Any]) -> SettingsType:
 
     bot = BotSettings(
         prefix=str(bot_data["prefix"]),
+        log_level=str(bot_data.get("log_level", "INFO")),
         owner_ids=list(bot_data["owner_ids"]),
         blacklisted_users=list(bot_data["blacklisted_users"]),
         user_training=bool(bot_data["user_training"]),

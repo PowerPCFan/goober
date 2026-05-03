@@ -79,7 +79,7 @@ class Markov(commands.Cog):
             ctx,
             f"Markov model retrained successfully using {data_size} data points!",
             edit=True,
-            # message_reference=processing_message_ref,
+            edit_message_reference=processing_message_ref,
         )
 
     @commands.command()

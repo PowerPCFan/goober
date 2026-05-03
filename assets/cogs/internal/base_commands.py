@@ -86,7 +86,7 @@ class BaseCommands(commands.Cog):
 
         embed: discord.Embed = discord.Embed(
             title="Pong!!",
-            description=f'{settings.bot.misc.ping_line}\n`{'Bot Latency:'}: {latency}ms`',
+            description=f'{settings.bot.misc.ping_line}\n`Bot Latency: {latency}ms`',
             color=discord.Colour(0x000000),
         )
         embed.set_footer(
@@ -134,7 +134,7 @@ class BaseCommands(commands.Cog):
 
         embed: discord.Embed = discord.Embed(
             title=f"{'Bot stats'}",
-            description=f"{"Data about the the bot's memory."}",
+            description="Data about the the bot's memory.",
             color=discord.Colour(0x000000),
         )
         embed.add_field(

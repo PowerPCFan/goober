@@ -111,7 +111,14 @@ Ounces: Unit = {
 }
 
 
-Reactions = ["btw", "heh", "just in case you wanted to know", "since you don't know how to Google...", ""]
+Reactions = [
+    "That's {val} btw",
+    "you could have just said {val} heh",
+    "That's {val} just in case you wanted to know",
+    "that's {val} since you don't know how to Google...",
+    "since your internet is down that's {val}",
+    ""
+]
 
 
 def to_speed_unit(unit: Unit) -> Unit:
@@ -331,13 +338,13 @@ class Converter(commands.Cog):
 
     def __format_response(self, converted_values: List[ConvertedValue]) -> str:
         logger.debug(f"Values: {converted_values}")
-        message: str = "-# That's "
+        message: str = ""
 
         for i, converted in enumerate(converted_values):
             temp_line: str = ", and " if (i == len(converted_values) - 1 and i != 0) else ", " if i != 0 else ""
             data_line: str = ""
 
-            for unit, data in converted.items():
+            for _, data in converted.items():
                 if data is None:
                     continue
 
@@ -351,9 +358,9 @@ class Converter(commands.Cog):
 
             message += temp_line
 
-        message += " " + random.choice(Reactions)
+        message = random.choice(Reactions).format(val=message)
 
-        return message
+        return "-# " + message
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
