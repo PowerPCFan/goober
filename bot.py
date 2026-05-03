@@ -3,12 +3,9 @@ from modules.logger import GooberFormatter
 import tracemalloc
 import os
 import time
-import random
 import traceback
-import tempfile
-import shutil
 import sys
-from typing import Literal, Set, Optional, TypedDict
+from typing import Literal, Set, TypedDict
 from modules.settings import instance as settings_manager, ActivityType
 import discord
 from discord.ext import commands
@@ -17,7 +14,6 @@ import markovify
 from modules.markovmemory import load_memory, load_markov_model, save_memory, train_markov_model
 from modules.sentenceprocessing import append_mentions_to_18digit_integer, preprocess_message
 from modules.unhandledexception import handle_exception, handle_exception_with_context
-from modules.image import gen_demotivator
 
 logger = logging.getLogger("goober")
 logger.setLevel(logging.DEBUG)

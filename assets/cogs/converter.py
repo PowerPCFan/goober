@@ -372,10 +372,9 @@ class Converter(commands.Cog):
 
             if not matches:
                 continue
-            for match in matches:
-                logger.info(match.groups())
-                match_string: str = "".join(match.groups()).strip()
 
+            for match in matches:
+                match_string: str = "".join(match.groups()).strip()
                 logger.debug(match.groups())
                 if match_string in settings.get("blacklisted_words"):
                     logger.info(f"Skipping match {match_string} due to it being blacklisted")
