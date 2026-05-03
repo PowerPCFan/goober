@@ -1,4 +1,3 @@
-from typing import List
 import discord
 from discord.ext import commands
 import markovify
@@ -10,7 +9,6 @@ import logging
 from modules.settings import instance as settings_manager
 import re
 import time
-from modules.sync_connector import instance as sync_hub
 
 logger = logging.getLogger("goober")
 
@@ -55,23 +53,19 @@ class BreakingNews(commands.Cog):
 
         if not message.content.lower().startswith("breaking news:"):
             return
-        
-        if not sync_hub.can_breaking_news(message.id, message.channel.id):
-            logger.debug("Sync hub denied breaking news request")
-            return
-            
 
-        texts = re.split("breaking news:", message.content, flags=re.IGNORECASE)
+        texts: list[str] = re.split("breaking news:", message.content, flags=re.IGNORECASE)
 
         logger.debug(texts)
         try:
-            text = texts[1].strip()
-            if not text and self.model is None:
+            text: str | None = texts[1].strip()
+
+            if not text or self.model is None:
                 await message.reply("No news specified and model not found!")
                 return False
 
-            text = text or self.model.make_sentence(max_chars=50, tries=50) #type: ignore
-            path = self.__insert_text(text)
+            text = text or self.model.make_sentence(max_chars=50, tries=50)
+            path = self.__insert_text(text or "")
         except IndexError:
             if self.model is None:
                 await message.reply("No model loaded and no breaking news specified")

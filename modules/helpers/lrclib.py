@@ -3,7 +3,9 @@ from typing import TypedDict, List
 import requests_async
 import logging
 
+
 logger = logging.getLogger("goober")
+
 
 class LRCLIBResponse(TypedDict):
     id: int
@@ -16,12 +18,12 @@ class LRCLIBResponse(TypedDict):
     plainLyrics: str
     syncedLyrics: str
 
+
 class LRCLIBFetchError(TypedDict):
     statusCode: int
     name: str
     message: str
 
-LRCLIBFetchResponse = LRCLIBFetchError | LRCLIBResponse
 
 class LRCAPI:
     @staticmethod
@@ -31,17 +33,22 @@ class LRCAPI:
         matches: List[LRCLIBResponse] = response.json()
 
         return matches
-    
+
     @staticmethod
-    async def fetch_song(track_name: str, artist_name: str, album_name: str, duration_seconds: float) -> LRCLIBFetchResponse:
+    async def fetch_song(
+        track_name: str,
+        artist_name: str,
+        album_name: str,
+        duration_seconds: float
+    ) -> LRCLIBFetchError | LRCLIBResponse:
         logger.info("Fetching song lyrics..")
-        response = await requests_async.get(f"https://lrclib.net/api/get", params={
+        response = await requests_async.get("https://lrclib.net/api/get", params={
             "track_name": slugify(track_name, separator='+'),
             "artist_name": slugify(artist_name, separator='+'),
             "album_name": slugify(album_name, separator='+'),
             "duration": round(duration_seconds),
         })
         logger.info(response.url)
-        match: LRCLIBFetchResponse = response.json()
+        match: LRCLIBFetchError | LRCLIBResponse = response.json()
 
         return match

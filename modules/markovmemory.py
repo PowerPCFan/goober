@@ -2,9 +2,8 @@ import os
 import json
 import markovify
 import pickle
-from modules.globalvars import *
 import logging
-import modules.keys as k
+from modules.globalvars import RESET
 from modules.settings import instance as settings_manager
 
 settings = settings_manager.settings
@@ -68,7 +67,7 @@ def train_markov_model(memory, additional_data=None) -> markovify.NewlineText | 
 # Save the Markov model to a pickle file
 def save_markov_model(model):
     filename = settings["bot"]["active_model"]
-    
+
     with open(filename, "wb") as f:
         pickle.dump(model, f)
     logger.info(f"Markov model saved to {filename}.")
@@ -83,9 +82,9 @@ def load_markov_model():
         try:
             with open(filename, "rb") as f:
                 model = pickle.load(f)
-            logger.info(f"{k.model_loaded()} {filename}.{RESET}")
+            logger.info(f"{'Markov model loaded from'} {filename}.{RESET}")
         except FileNotFoundError:
-            logger.error(f"{filename} {k.not_found()}{RESET}")
+            logger.error(f"{filename} {'is not found!'}{RESET}")
             return None
 
     return model

@@ -1,5 +1,5 @@
 import logging
-from modules.globalvars import *
+from modules.globalvars import DEBUG, RESET, GREEN, YELLOW, RED, PURPLE
 
 
 class GooberFormatter(logging.Formatter):

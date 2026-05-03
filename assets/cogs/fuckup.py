@@ -71,7 +71,7 @@ class FuckUp(commands.Cog):
             else:
                 fallback_image = get_random_asset_image()
                 if fallback_image is None:
-                    await ctx.reply(k.no_image_available())
+                    await ctx.reply('No images available!')
                     return
                 temp_input = tempfile.mktemp(suffix=os.path.splitext(fallback_image)[1])
                 shutil.copy(fallback_image, temp_input)
@@ -79,7 +79,7 @@ class FuckUp(commands.Cog):
         else:
             fallback_image = get_random_asset_image()
             if fallback_image is None:
-                await ctx.reply(k.no_image_available())
+                await ctx.reply('No images available!')
                 return
             temp_input = tempfile.mktemp(suffix=os.path.splitext(fallback_image)[1])
             shutil.copy(fallback_image, temp_input)
@@ -90,7 +90,7 @@ class FuckUp(commands.Cog):
         if output_path is None or not os.path.isfile(output_path):
             if temp_input and os.path.exists(temp_input):
                 os.remove(temp_input)
-            await ctx.reply(k.failed_generate_image())
+            await ctx.reply('Failed to generate an image')
             return
 
         deepfried_path = await deepfryimage(output_path)

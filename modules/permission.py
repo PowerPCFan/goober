@@ -1,11 +1,8 @@
-from functools import wraps
+import logging
 import discord
-
 import discord.ext
 import discord.ext.commands
-
 from modules.settings import instance as settings_manager
-import logging
 
 logger = logging.getLogger("goober")
 
@@ -15,8 +12,10 @@ settings = settings_manager.settings
 class PermissionError(Exception):
     pass
 
+
 def is_admin(id: int) -> bool:
     return id in settings["bot"]["owner_ids"]
+
 
 def requires_admin():
     async def wrapper(ctx: discord.ext.commands.Context):

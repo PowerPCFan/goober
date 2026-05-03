@@ -1,10 +1,7 @@
 import os
 import re
-import random
-import shutil
-import tempfile
-from typing import Optional, List
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont
+from PIL.Image import Resampling
 from modules.markovmemory import load_markov_model
 from modules.sentenceprocessing import (
     improve_sentence_coherence,
@@ -146,7 +143,7 @@ async def gen_meme(input_image_path, sentence_size=5, max_attempts=10):
         font_size = int(height / 10)
         font = load_font(font_size)
 
-        truncated = coherent_response[:100]
+        truncated = coherent_response[:100]  # pyright: ignore[reportPossiblyUnboundVariable]
         bbox = draw.textbbox((0, 0), truncated, font=font)
         text_width = bbox[2] - bbox[0]
         draw_text_with_outline(draw, truncated, (width - text_width) / 2, 0, font)
@@ -165,7 +162,7 @@ async def gen_demotivator(input_image_path, max_attempts=5):
             size = max(img.width, img.height)
             frame_thick = int(size * 0.0054)
             inner_size = size - 2 * frame_thick
-            resized_img = img.resize((inner_size, inner_size), Image.LANCZOS)
+            resized_img = img.resize((inner_size, inner_size), Resampling.LANCZOS)
             framed = Image.new("RGB", (size, size), "white")
             framed.paste(resized_img, (frame_thick, frame_thick))
             landscape_w = int(size * 1.5)

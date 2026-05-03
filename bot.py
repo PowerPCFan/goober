@@ -2,6 +2,34 @@ import logging
 from modules.logger import GooberFormatter
 from modules import key_compiler
 import tracemalloc
+import os
+import time
+import random
+import traceback
+import tempfile
+import shutil
+import sys
+from typing import (
+    List,
+    Dict,
+    Literal,
+    Set,
+    Optional,
+    TypedDict
+)
+from modules.prestartchecks import start_checks
+import modules.keys as k
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+from modules.settings import instance as settings_manager, ActivityType
+import discord
+from discord.ext import commands
+from better_profanity import profanity
+import markovify
+from modules.markovmemory import load_memory, load_markov_model, save_memory, train_markov_model
+from modules.sentenceprocessing import append_mentions_to_18digit_integer, preprocess_message
+from modules.unhandledexception import handle_exception, handle_exception_with_context
+from modules.image import gen_demotivator
 
 logger = logging.getLogger("goober")
 logger.setLevel(logging.DEBUG)
@@ -18,6 +46,8 @@ logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
 logger.info("Starting...")
+
+
 def build_keys():
     logger.info("Building keys")
     key_compiler.build_result(
@@ -29,31 +59,8 @@ def build_keys():
     )
     logger.info("Built keys!")
 
-build_keys()
 
-import os
-import time
-import random
-import traceback
-import tempfile
-import shutil
-import sys
-from typing import (
-    List,
-    Dict,
-    Literal,
-    Set,
-    Optional,
-    TypedDict
-)
-import logging
-from modules.prestartchecks import start_checks
-import modules.keys as k
-import logging
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
-from modules.settings import instance as settings_manager, ActivityType
-from modules.sync_connector import instance as sync_connector
+build_keys()
 
 messages_recieved = 0
 
@@ -69,19 +76,10 @@ with open(settings["splash_text_loc"], "r", encoding="UTF-8") as f:
 
 start_checks()
 
-import discord
-from discord.ext import commands
-
-from better_profanity import profanity
-from discord.ext import commands
-
-from modules.markovmemory import *
-from modules.sentenceprocessing import *
-from modules.unhandledexception import handle_exception, handle_exception_with_context
-from modules.image import gen_demotivator
-
 sys.excepthook = handle_exception
 tracemalloc.start()
+
+
 class MessageMetadata(TypedDict):
     user_id: str
     user_name: str
@@ -91,6 +89,7 @@ class MessageMetadata(TypedDict):
     channel_name: str
     message: str
     timestamp: float
+
 
 os.makedirs("data", exist_ok=True)
 
@@ -119,7 +118,7 @@ bot: commands.Bot = commands.Bot(
 memory: List[str | Dict[Literal["_meta"], MessageMetadata]] = load_memory()
 markov_model: markovify.Text | None = load_markov_model()
 if not markov_model:
-    logger.error(k.markov_model_not_found())
+    logger.error('Markov model not found!')
     memory = load_memory()
     markov_model = train_markov_model(memory)
 
@@ -142,17 +141,17 @@ async def load_cogs_from_folder(bot: commands.Bot, folder_name="assets/cogs"):
 
         try:
             await bot.load_extension(module_path)
-            logger.info(f"{k.loaded_cog()} {cog_name}")
+            logger.info(f"{'Loaded cog:'} {cog_name}")
         except Exception as e:
-            logger.error(f"{k.cog_fail()} {cog_name} {e}")
-            traceback.print_exc()    
+            logger.error(f"{'Failed to load cog:'} {cog_name} {e}")
+            traceback.print_exc()
+
 
 # Event: Called when the bot is ready
 @bot.event
 async def on_ready() -> None:
     global launched
 
-    folder_name: str = "cogs"
     if launched:
         return
 
@@ -161,8 +160,8 @@ async def on_ready() -> None:
     try:
         synced: List[discord.app_commands.AppCommand] = await bot.tree.sync()
 
-        logger.info(f"{k.synced_commands()} {len(synced)} {k.synced_commands2()}")
-        logger.info(k.started(settings["name"]))
+        logger.info(f"Synced {len(synced)} commands!")
+        logger.info(f"{settings['name']} has started!\nYou're the star of the show now baby!")
 
     except discord.errors.Forbidden as perm_error:
         logger.error(f"Permission error while syncing commands: {perm_error}")
@@ -170,12 +169,11 @@ async def on_ready() -> None:
             "Make sure the bot has the 'applications.commands' scope and is invited with the correct permissions."
         )
     except Exception as e:
-        logger.error(f"{k.fail_commands_sync()} {e}")
+        logger.error(f"Failed to sync commands: {e}")
         traceback.print_exc()
 
     if not settings["bot"]["misc"]["activity"]["content"]:
         return
-
 
     activities: Dict[ActivityType, discord.ActivityType] = {
         "listening": discord.ActivityType.listening,
@@ -247,7 +245,7 @@ async def demotivator(ctx: commands.Context) -> None:
         else:
             fallback_image: Optional[str] = get_random_asset_image()
             if fallback_image is None:
-                await ctx.reply(k.no_image_available())
+                await ctx.reply('No images available!')
                 return
             temp_input = tempfile.mktemp(suffix=os.path.splitext(fallback_image)[1])
             shutil.copy(fallback_image, temp_input)
@@ -255,13 +253,13 @@ async def demotivator(ctx: commands.Context) -> None:
     else:
         fallback_image = get_random_asset_image()
         if fallback_image is None:
-            await ctx.reply(k.no_image_available())
+            await ctx.reply('No images available!')
             return
         temp_input = tempfile.mktemp(suffix=os.path.splitext(fallback_image)[1])
         shutil.copy(fallback_image, temp_input)
         input_path = temp_input
 
-    output_path: Optional[str] = await gen_demotivator(input_path) # type: ignore
+    output_path: Optional[str] = await gen_demotivator(input_path)
 
     if output_path is None or not os.path.isfile(output_path):
         if temp_input and os.path.exists(temp_input):
@@ -281,14 +279,7 @@ async def on_message(message: discord.Message) -> None:
     global memory, markov_model, messages_recieved
 
     messages_recieved += 1
-    EMOJIS = [
-        "\U0001f604",
-        "\U0001f44d",
-        "\U0001f525",
-        "\U0001f4af",
-        "\U0001f389",
-        "\U0001f60e",
-    ]  # originally was emojis but it would probably shit itself on systems without unicode so....
+
     if message.author.bot:
         return
 
@@ -303,13 +294,11 @@ async def on_message(message: discord.Message) -> None:
     if not settings["bot"]["user_training"]:
         return
 
-    
     if (
-        settings["bot"]["misc"]["block_profanity"] and 
-        profanity.contains_profanity(message.content)
+        settings["bot"]["misc"]["block_profanity"]
+        and profanity.contains_profanity(message.content)
     ):
         return
-
 
     formatted_message: str = append_mentions_to_18digit_integer(message.content)
     cleaned_message: str = preprocess_message(formatted_message)
@@ -342,29 +331,11 @@ async def on_message(message: discord.Message) -> None:
         logger.info("Skipping positivty checks due to message being too short")
         return
 
-    sentiment_score = is_positive(
-        message.content
-    )  # doesnt work but im scared to change the logic now please ignore
-    if sentiment_score > 0.8:
-        if not settings["bot"]["react_to_messages"]:
-            return
-
-        if not sync_connector.can_react(message.id, message.channel.id):
-            logger.info("Sync hub determined that this instance cannot react")
-            return
-        
-
-        emoji = random.choice(EMOJIS)
-        try:
-            await message.add_reaction(emoji)
-        except Exception as e:
-            logger.info(f"Failed to react with emoji: {e}")
-
 
 # Event: Called on every interaction (slash command, etc.)
 @bot.event
 async def on_interaction(interaction: discord.Interaction) -> None:
-    logger.info(f"{k.command_ran_s(interaction.user.name)} {interaction.user.name}")
+    logger.info(f"{f'Info: {interaction.user} ran '} {interaction.user.name}")
 
 
 # Global check: Block blacklisted users from running commands
@@ -376,12 +347,12 @@ async def block_blacklisted(ctx: commands.Context) -> bool:
     try:
         if isinstance(ctx, discord.Interaction):
             if not ctx.response.is_done():
-                await ctx.response.send_message(k.blacklisted(), ephemeral=True)
+                await ctx.response.send_message('blacklisted', ephemeral=True)
             else:
-                await ctx.followup.send(k.blacklisted(), ephemeral=True)
+                await ctx.followup.send('blacklisted', ephemeral=True)
         else:
-            await ctx.send(k.blacklisted_user(), ephemeral=True)
-    except:
+            await ctx.send('Blacklisted user', ephemeral=True)
+    except Exception:
         return False
 
     return True
@@ -407,7 +378,7 @@ class OnMyWatch:
         try:
             while True:
                 time.sleep(5)
-        except:
+        except Exception:
             self.observer.stop()
             print("Observer Stopped")
 

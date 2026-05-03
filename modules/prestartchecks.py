@@ -1,18 +1,17 @@
-from modules.globalvars import *
+from modules.globalvars import RESET, YELLOW, beta
 import time
 import os
 import sys
 import subprocess
 import sysconfig
-import ast
+import pathlib
+import platform
 import json
 import re
 from spacy.util import is_package
 import importlib.metadata
 import logging
-import modules.keys as k
 from modules.settings import instance as settings_manager
-from modules.sync_connector import instance as sync_hub
 import threading
 
 settings = settings_manager.settings
@@ -20,14 +19,12 @@ settings = settings_manager.settings
 
 logger = logging.getLogger("goober")
 
-# import shutil
 psutilavaliable = True
 try:
-    import requests
     import psutil
 except ImportError:
     psutilavaliable = False
-    logger.error(k.missing_requests_psutil())
+    logger.error('Missing requests and psutil! Please install them using pip: `pip install requests psutil`')
 
 
 def check_for_model():
@@ -41,7 +38,8 @@ def iscloned():
     if os.path.exists(".git"):
         return True
     else:
-        logger.error(f"{k.not_cloned()}")
+        logger.error(f"{'Goober is not cloned! Please clone it from GitHub.'}")
+
 
 def get_stdlib_modules():
     stdlib_path = pathlib.Path(sysconfig.get_paths()["stdlib"])
@@ -77,7 +75,7 @@ def check_requirements():
     )
 
     if not os.path.exists(requirements_path):
-        logger.error(f"{k.requirements_not_found(path=requirements_path)}")
+        logger.error(f"requirements.txt not found at {requirements_path} was it tampered with?")
         return
 
     with open(requirements_path, "r") as f:
@@ -97,24 +95,24 @@ def check_requirements():
 
     for req in sorted(requirements):
         if req in STD_LIB_MODULES or req == "modules":
-            print(k.std_lib_local_skipped(package=req))
+            print(f'STD LIB / LOCAL {req} (skipped check)')
             continue
 
         check_name = req.lower()
 
         if check_name in installed_packages:
-            logger.info(f"{k.ok_installed()} {check_name}")
+            logger.info(f"{'OK'} {check_name}")
         else:
-            logger.error(f"{k.missing_package()} {check_name} {k.missing_package2()}")
+            logger.error(f"{'MISSING'} {check_name} {'is not installed'}")
             missing.append(check_name)
 
     if missing:
-        logger.error(k.missing_packages_detected())
+        logger.error('Missing packages detected:')
         for pkg in missing:
             print(f"  - {pkg}")
         sys.exit(1)
     else:
-        logger.info(k.all_requirements_satisfied())
+        logger.info('All requirements are satisfied.')
 
 
 def check_latency():
@@ -142,20 +140,20 @@ def check_latency():
             match = re.search(latency_pattern, result.stdout)
             if match:
                 latency_ms = float(match.group(1))
-                logger.info(k.ping_to(host=host, latency=latency_ms))
+                logger.info('Ping to {host}: {latency} ms'.format(host=host, latency=latency_ms))
                 if latency_ms > 300:
-                    logger.warning(f"{k.high_latency()}")
+                    logger.warning(f"{'High latency detected! You may experience delays in response times.'}")
             else:
-                logger.warning(k.could_not_parse_latency())
+                logger.warning('Could not parse latency.')
         else:
             print(result.stderr)
-            logger.error(f"{k.ping_failed(host=host)}{RESET}")
+            logger.error(f"{'Ping to {host} failed.'.format(host=host)}{RESET}")
     except Exception as e:
-        logger.error(k.error_running_ping(error=e))
+        logger.error('Error running ping: {error}'.format(error=e))
 
 
 def check_memory():
-    if psutilavaliable == False:
+    if not psutilavaliable:
         return
     try:
         memory_info = psutil.virtual_memory()  # type: ignore
@@ -164,7 +162,7 @@ def check_memory():
         free_memory = memory_info.available / (1024**3)
 
         logger.info(
-            k.memory_usage(
+            "Memory Usage: {used} GB / {total} GB ({percent}%)".format(
                 used=used_memory,
                 total=total_memory,
                 percent=(used_memory / total_memory) * 100,
@@ -172,59 +170,59 @@ def check_memory():
         )
         if used_memory > total_memory * 0.9:
             print(
-                f"{YELLOW}{k.memory_above_90(percent=(used_memory / total_memory) * 100)}{RESET}"
+                f"{YELLOW}{'Memory usage is above 90% ({percent}%). Consider freeing up memory.'.format(percent=(used_memory / total_memory) * 100)}{RESET}"
             )
-        logger.info(k.total_memory(total=total_memory))
-        logger.info(k.used_memory(used=used_memory))
+        logger.info('Total Memory: {total} GB'.format(total=total_memory))
+        logger.info('Used Memory: {used} GB'.format(used=used_memory))
         if free_memory < 1:
-            logger.warning(f"{k.low_free_memory(free=free_memory)}")
+            logger.warning(f"{'Low free memory detected! Only {free} GB available.'.format(free=free_memory)}")
 
     except ImportError:
         logger.error(
-            k.psutil_not_installed()
+            'Memory check skipped.'
         )  # todo: translate this into italian and put it in the translations "psutil is not installed. Memory check skipped."
 
 
 def check_cpu():
-    if psutilavaliable == False:
+    if not psutilavaliable:
         return
-    logger.info(k.measuring_cpu())
+    logger.info('Measuring CPU usage per core...')
     cpu_per_core = psutil.cpu_percent(interval=1, percpu=True)  # type: ignore
     total_cpu = sum(cpu_per_core) / len(cpu_per_core)
-    logger.info(k.total_cpu_usage(usage=total_cpu))
+    logger.info('Total CPU Usage: {usage}%'.format(usage=total_cpu))
 
     if total_cpu > 85:
-        logger.warning(f"{k.high_avg_cpu(usage=total_cpu)}")
+        logger.warning(f"{'High average CPU usage: {usage}%'.format(usage=total_cpu)}")
 
     if total_cpu > 95:
-        logger.error(k.really_high_cpu())
+        logger.error('Really high CPU load! System may throttle or hang.')
 
 
 def check_memoryjson():
     try:
         logger.info(
-            k.memory_file(
+            "Memory file: {size} MB".format(
                 size=os.path.getsize(settings["bot"]["active_memory"]) / (1024**2)
             )
         )
         if os.path.getsize(settings["bot"]["active_memory"]) > 1_073_741_824:
-            logger.warning(f"{k.memory_file_large()}")
+            logger.warning(f"{'Memory file is 1GB or higher, consider clearing it to free up space.'}")
         try:
             with open(settings["bot"]["active_memory"], "r", encoding="utf-8") as f:
                 json.load(f)
 
         except json.JSONDecodeError as e:
-            logger.error(f"{k.memory_file_corrupted(error=e)}")
-            logger.warning(f"{k.consider_backup_memory()}")
+            logger.error(f"{'Memory file is corrupted! JSON decode error: {error}'.format(error=e)}")
+            logger.warning(f"{'Consider backing up and recreating the memory file.'}")
 
         except UnicodeDecodeError as e:
-            logger.error(f"{k.memory_file_encoding(error=e)}")
-            logger.warning(f"{k.consider_backup_memory()}")
+            logger.error(f"{'Memory file has encoding issues: {error}'.format(error=e)}")
+            logger.warning(f"{'Consider backing up and recreating the memory file.'}")
 
         except Exception as e:
-            logger.error(f"{k.error_reading_memory(error=e)}")
+            logger.error(f"{'Error reading memory file: {error}'.format(error=e)}")
     except FileNotFoundError:
-        logger.info(f"{k.memory_file_not_found()}")
+        logger.info(f"{'Memory file not found.'}")
 
 
 def presskey2skip(timeout):
@@ -260,22 +258,13 @@ def presskey2skip(timeout):
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
-def check_synchub():
-    sync_hub.connection_thread.join()
-    if not sync_hub.connected:
-        logger.warning("Sync hub not connected properly! The bot will not be able to react to messages, or create breaking news unless you disable synchub in settings")
-    else:
-        logger.info("Sync hub is conencted")
-
-beta = beta
-
 
 def start_checks():
     if settings["disable_checks"]:
-        logger.warning(f"{k.checks_disabled()}")
+        logger.warning(f"{'Checks are disabled!'}")
         return
 
-    logger.info(k.running_prestart_checks())
+    logger.info('Running pre-start checks...')
 
     checks = [
         check_for_model,
@@ -284,33 +273,29 @@ def start_checks():
         check_latency,
         check_memory,
         check_memoryjson,
-        check_cpu,
-        check_synchub
+        check_cpu
     ]
-    threads: List[threading.Thread] = []
+    threads: list[threading.Thread] = []
 
     for check in checks:
         t = threading.Thread(target=check)
         t.start()
         threads.append(t)
 
-
     if os.path.exists(".env"):
         pass
     else:
-        logger.warning(f"{k.env_file_not_found()}")
+        logger.warning(f"{'The .env file was not found! Please create one with the required variables.'}")
         sys.exit(1)
-    if beta == True:
-        logger.warning(
-            f"this build isnt finished yet, some things might not work as expected"
-        )
+    if beta:
+        logger.warning("this build isnt finished yet, some things might not work as expected")
     else:
         pass
 
     for thread in threads:
         thread.join()
 
-    logger.info(k.continuing_in_seconds(seconds=5))
+    logger.info('Continuing in {seconds} seconds... Press any key to skip.'.format(seconds=5))
     presskey2skip(timeout=5)
 
     with open(settings["splash_text_loc"], "r") as f:

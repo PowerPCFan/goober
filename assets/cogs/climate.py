@@ -1,11 +1,8 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
-
 import discord.ext
 import discord.ext.commands
 import math
-import random
 import time
 from modules.permission import requires_admin
 from modules.sentenceprocessing import send_message
@@ -15,14 +12,20 @@ import requests_async
 import logging
 import datetime
 
+
+# todo: finish making this work with my climate thingy
+
+
 class SettingsType(TypedDict):
     latitude: float
     longtitude: float
+
 
 default_settings: SettingsType = {
     "latitude": 30,
     "longtitude": 0
 }
+
 
 class IndoorData(TypedDict):
     temperature: float
@@ -310,7 +313,7 @@ PRESSURE_TRESHOLS: Dict[int, TresholdValue] = {
 
 logger = logging.getLogger("goober")
 
-class Climate(commands.Cog): 
+class Climate(commands.Cog):
     def __init__(self, bot: discord.ext.commands.Bot):
         self.bot: discord.ext.commands.Bot = bot
         self.description = "🌱|Monitor my indoor and outdoor climates"
@@ -325,21 +328,21 @@ class Climate(commands.Cog):
         }
 
         for value, treshold in sorted(tresholds.items(), key=lambda item: item[0]):
-            logger.info(str(current_value) + " " +  str(value))
+            logger.info(str(current_value) + " " + str(value))
             if current_value < value:
                 break
-            
+
             found_treshold = treshold
 
         return found_treshold
-    
+
     def format_embed(self, label: str, unit: str, value: float, treshold: Dict[int, TresholdValue]) -> dict:
         ranking = self.get_ranking(value, treshold)
         return {
             "name": f"{label} {ranking['emoji']}",
             "value": f"{round(value, 2)} {unit} (**{ranking['label']}**)"
         }
-    
+
     def parse_prometheus_format(self, lines: str) -> dict:
         data = {}
         for line in lines.split("\n"):
@@ -348,9 +351,9 @@ class Climate(commands.Cog):
             key, value = line.split(" ")
 
             data[key.strip()] = float(value.strip())
-        
+
         return data
-        
+
     def get_sun_angle(self) -> float:
         settings: SettingsType = settings_manager.get_plugin_settings("climate", default_settings)  # type: ignore
 
@@ -374,16 +377,15 @@ class Climate(commands.Cog):
             result += refraction
 
         return result
-        
 
     @commands.command()
     async def indoors(self, ctx: commands.Context):
-        res = await requests_async.get("http://192.168.32.88:7778/data")
+        res = await requests_async.get("http://192.168.1.45:8080/latest/indoor")
         data: IndoorData = res.json()
 
         embed = discord.Embed(
             title="Climate data",
-            description=f"Information about my indoor climate"
+            description="Information about my indoor climate"
         )
 
         calculated_temp: float = data['scd40_temp'] - data['temperature_offset']

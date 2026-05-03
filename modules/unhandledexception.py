@@ -1,15 +1,10 @@
 import sys
-import traceback
-import os
-from modules.settings import instance as settings_manager
 import logging
-from modules.globalvars import RED, RESET
-import modules.keys as k
+import traceback
 import discord
 from discord.ext.commands import Context
-import logging
 from modules.sentenceprocessing import send_message
-import asyncio
+from modules.settings import instance as settings_manager
 
 settings = settings_manager.settings
 logger = logging.getLogger("goober")
@@ -23,7 +18,7 @@ def handle_exception(exc_type, exc_value, exc_traceback, *, context: str | None 
     logger.error("=====BEGINNING OF TRACEBACK=====")
     traceback.print_exception(exc_type, exc_value, exc_traceback)
     logger.error("========END OF TRACEBACK========")
-    logger.error(k.unhandled_exception())
+    logger.error('An unhandled exception occurred. Please report this issue on GitHub.')
 
     if context:
         logger.error(f"Context: {context}")

@@ -43,7 +43,7 @@ class Markov(commands.Cog):
     @commands.command()
     async def retrain(self, ctx: discord.ext.commands.Context):
         message_ref: discord.Message | None = await send_message(
-            ctx, f"{k.command_markov_retrain()}"
+            ctx, f"{'Retraining the Markov model... Please wait.'}"
         )
 
         if message_ref is None:
@@ -54,16 +54,16 @@ class Markov(commands.Cog):
             with open(settings["bot"]["active_memory"], "r") as f:
                 memory: List[str] = json.load(f)
         except FileNotFoundError:
-            await send_message(ctx, f"{k.command_markov_memory_not_found()}")
+            await send_message(ctx, f"{'Error: memory file not found!'}")
             return
         except json.JSONDecodeError:
-            await send_message(ctx, f"{k.command_markov_memory_is_corrupt()}")
+            await send_message(ctx, f"{'Error: memory file is corrupt!'}")
             return
 
         data_size: int = len(memory)
 
         processing_message_ref: discord.Message | None = await send_message(
-            ctx, f"{k.command_markov_retraining(data_size)}"
+            ctx, f"Processing {data_size} data points..."
         )
         if processing_message_ref is None:
             logger.error("Couldnt find message processing message!")
@@ -83,7 +83,7 @@ class Markov(commands.Cog):
 
         await send_message(
             ctx,
-            f"{k.command_markov_retrain_successful(data_size)}",
+            f"Markov model retrained successfully using {data_size} data points!",
             edit=True,
             message_reference=processing_message_ref,
         )
@@ -91,20 +91,20 @@ class Markov(commands.Cog):
     @commands.command()
     async def talk(self, ctx: commands.Context, sentence_size: int = 5) -> None:
         if not self.model:
-            await send_message(ctx, f"{k.command_talk_insufficent_text()}")
+            await send_message(ctx, f"{'I need to learn more from messages before I can talk.'}")
             return
 
         response: str = ""
         if sentence_size == 1:
             response = (
                 self.model.make_short_sentence(max_chars=200, tries=700)
-                or k.command_talk_generation_fail()
+                or 'I have nothing to say right now!'
             )
 
         else:
             response = improve_sentence_coherence(
                 self.model.make_sentence(tries=100, max_words=sentence_size)
-                or k.command_talk_generation_fail()
+                or 'I have nothing to say right now!'
             )
 
         cleaned_response: str = re.sub(r"[^\w\s]", "", response).lower()

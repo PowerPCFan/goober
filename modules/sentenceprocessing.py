@@ -1,31 +1,28 @@
 import re
-import discord.ext
+import discord
 import discord.ext.commands
-import spacy.lang
-from modules.globalvars import *
+import threading
+import logging
 import spacy
 from spacy.tokens import Doc
-from spacytextblob.spacytextblob import SpacyTextBlob
-import discord
-import modules.keys as k
-import threading
-
-import logging
+from modules.globalvars import RESET
 
 logger = logging.getLogger("goober")
 nlp: spacy.language.Language | None = None
 
+
 def check_resources():
     global nlp
+
     try:
         nlp = spacy.load("en_core_web_sm")
     except OSError:
-        logging.critical(k.spacy_model_not_found())
+        logging.critical('The spaCy model was not found! Downloading it....`')
         spacy.cli.download("en_core_web_sm")  # type: ignore
         nlp = spacy.load("en_core_web_sm")
     if "spacytextblob" not in nlp.pipe_names:
         nlp.add_pipe("spacytextblob")
-    logger.info(k.spacy_initialized())
+    logger.info('spaCy and spacytextblob are ready.')
 
 
 nlp_thread = threading.Thread(target=check_resources)
@@ -40,11 +37,11 @@ def is_positive(sentence):
     if nlp is None:
         logger.error("NLP Not loaded! Defaulting to positivity 0")
         return 0
-    
+
     doc = nlp(sentence)
     sentiment_score = doc._.polarity  # from spacytextblob
 
-    debug_message = f"{k.sentence_positivity()} {sentiment_score}{RESET}"
+    debug_message = f"{'Positivity of sentence is:'} {sentiment_score}{RESET}"
     logger.debug(debug_message)
 
     return (
@@ -59,7 +56,7 @@ async def send_message(
     file: discord.File | None = None,
     edit: bool = False,
     edit_message_reference: discord.Message | None = None,
-) -> discord.Message:
+) -> discord.Message | None:
 
     sent_message: discord.Message | None = None
 
@@ -68,7 +65,7 @@ async def send_message(
             await edit_message_reference.edit(content=message, embed=embed)
             return edit_message_reference
         except Exception as e:
-            await ctx.send(f"{k.edit_fail()} {e}")
+            await ctx.send(f"{'Failed to edit message'} {e}")
             return None
 
     if embed:
@@ -78,7 +75,7 @@ async def send_message(
     else:
         sent_message = await ctx.send(content=message)
 
-    return sent_message # type: ignore
+    return sent_message
 
 
 def append_mentions_to_18digit_integer(message):
@@ -92,7 +89,7 @@ def preprocess_message(message):
     if nlp is None:
         logger.error("NLP Not loaded! Quitting")
         quit(1)
-    
+
     doc = nlp(message)
     tokens = [token.text for token in doc if token.is_alpha or token.is_digit]
     return " ".join(tokens)
