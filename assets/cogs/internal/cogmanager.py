@@ -13,6 +13,7 @@ COG_PREFIX = "assets.cogs."
 class CogManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.description = "💼|Commands for managing cogs"
 
     @requires_admin()
     @commands.command()

@@ -82,9 +82,9 @@ def load_markov_model():
         try:
             with open(filename, "rb") as f:
                 model = pickle.load(f)
-            logger.info(f"{'Markov model loaded from'} {filename}.{RESET}")
+            logger.info(f"Markov model loaded from {filename}.{RESET}")
         except FileNotFoundError:
-            logger.error(f"{filename} {'is not found!'}{RESET}")
+            logger.error(f"{filename} is not found!{RESET}")
             return None
 
     return model

@@ -1,8 +1,6 @@
 import os
 import discord
 from discord.ext import commands
-import discord.ext
-import discord.ext.commands
 from modules.permission import requires_admin
 from modules.sentenceprocessing import send_message
 from modules.settings import instance as settings_manager
@@ -23,37 +21,29 @@ logger = logging.getLogger("goober")
 
 class BaseCommands(commands.Cog):
     def __init__(self, bot):
-        self.bot: discord.ext.commands.Bot = bot
+        self.bot: commands.Bot = bot
+        self.description = "🌐 | General commands for various stuff"
 
     @commands.command()
     async def help(self, ctx: commands.Context, layout: str = "h") -> None:
         embed: discord.Embed = discord.Embed(
-            title=f"{'Bot Help'}",
-            description=f"{'List of commands grouped by category.'}. Do `{settings.bot.prefix}help v` to use a vertical layout",
+            title="Bot Help",
+            description=f"List of commands grouped by category. Do `{settings.bot.prefix}help v` to use a vertical layout",
             color=discord.Colour(0x000000),
         )
 
-        category_aliases: dict[str, tuple[str, str]] = {
-            "BaseCommands": ("General", "🌐 | General commands for stuff"),
-        }
-
-        category_descriptions: dict[str, str] = {
-            "Administration": "🛠️ | Bot management commands",
-            "Cog Management": "💼 | Commands for managing cogs",
-            "Sync Hub": "📨 | Commands for managing Sync hub",
-            "General": "🌐 | General commands for stuff"
+        category_aliases: dict[str, str] = {
+            "BaseCommands": "General"
         }
 
         command_categories: dict[str, list[str]] = {}
+        category_descriptions: dict[str, str] = {}
 
         for cog_name, cog in self.bot.cogs.items():
-            display_name, default_description = category_aliases.get(
-                cog_name,
-                (cog_name, cog.description or "No description"),
-            )
-            category_descriptions.setdefault(display_name, default_description)
-
+            display_name = category_aliases.get(cog_name, cog_name)
             commands_list = command_categories.setdefault(display_name, [])
+            category_descriptions.setdefault(display_name, getattr(cog, "description", "No description"))
+
             for command in cog.get_commands():
                 if command.hidden:
                     continue
@@ -63,11 +53,15 @@ class BaseCommands(commands.Cog):
             commands_in_category: str = "\n".join([f"{settings.bot.prefix}**{command}**" for command in commands_list])
             description = category_descriptions.get(category, 'No description')
             emoji = ""
+
             if "|" in description:
                 emoji, description = description.split("|", 1)
 
+            emoji = emoji.strip() + " "  # normalize spacing
+
             embed_value = f"{description}\n\n{commands_in_category}\n‌"  # don't remove zero width non joiner since it adds spacing
             embed.add_field(name=f"{emoji} {category}", value=embed_value, inline=(False if layout == "v" else True))
+
         await send_message(ctx, embed=embed)
 
     @commands.command()
@@ -76,7 +70,7 @@ class BaseCommands(commands.Cog):
         latency: int = round(self.bot.latency * 1000)
 
         embed: discord.Embed = discord.Embed(
-            title="Pong!!",
+            title="Pong!",
             description=f'{settings.bot.misc.ping_line}\n`Bot Latency: {latency}ms`',
             color=discord.Colour(0x000000),
         )
@@ -106,7 +100,8 @@ class BaseCommands(commands.Cog):
             inline=False,
         )
 
-        embed.add_field(name="Github", value="https://github.com/gooberinc/goober")
+        embed.add_field(name="GitHub", value="https://github.com/PowerPCFan/goober")
+
         await send_message(ctx, embed=embed)
 
     @commands.command()
@@ -114,7 +109,7 @@ class BaseCommands(commands.Cog):
         memory_file: str = settings.bot.active_memory
         file_size: int = os.path.getsize(memory_file)
 
-        memory_info = psutil.virtual_memory()  # type: ignore
+        memory_info = psutil.virtual_memory()
         total_memory = memory_info.total / (1024**3)
         used_memory = memory_info.used / (1024**3)
 
@@ -198,32 +193,7 @@ class BaseCommands(commands.Cog):
 
         await send_message(ctx, response.text)
 
-    @requires_admin()
-    @commands.command()
-    async def synchub_test(self, ctx: commands.Context, message_id: str | None) -> None:
-        message_id = message_id or "0"
-        status = synchub.can_react(int(message_id), 0)
 
-        await send_message(ctx, f"Allowed to react to message {message_id}? {'yes' if status else 'no'} (connection to {settings.bot.sync_hub.url} active? {'yes' if synchub.connected else 'no'})")
-
-    @requires_admin()
-    @commands.command()
-    async def synchub_connect(self, ctx: commands.Context) -> None:
-        await send_message(ctx, "Trying to connect...")
-
-        connected = synchub.try_to_connect()
-        if connected:
-            await send_message(ctx, "Succesfully connected to sync hub!")
-        else:
-            await send_message(ctx, "Failed to connect to sync hub")
-
-    @requires_admin()
-    @commands.command()
-    async def synchub_stats(self, ctx: commands.Context) -> None:
-        connected = synchub.get_connected()
-        await ctx.send(connected)
-
-
-async def setup(bot: discord.ext.commands.Bot):
+async def setup(bot: commands.Bot):
     print("Setting up base_commands")
     await bot.add_cog(BaseCommands(bot))
