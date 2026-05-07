@@ -15,4 +15,5 @@ psutil
 requests
 pytubefix
 python-slugify
-requests-async
+httpx
+icmplib

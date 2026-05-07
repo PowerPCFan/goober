@@ -33,7 +33,7 @@ class MiscBotOptions:
 @dataclass
 class BotSettings:
     prefix: str
-    log_level: str
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     owner_ids: list[int]
     blacklisted_users: list[int]
     user_training: bool
@@ -50,7 +50,6 @@ class BotSettings:
 class SettingsType:
     bot: BotSettings
     name: str
-    splash_text_loc: str
     cog_settings: dict[str, Mapping[Any, Any]]
 
 
@@ -64,12 +63,12 @@ class AdminLogEvent:
 
 
 def _build_settings(data: Mapping[str, Any]) -> SettingsType:
-    bot_data = data["bot"]
-    misc_data = bot_data["misc"]
+    bot_data: Mapping[str, Any] = data["bot"]
+    misc_data: Mapping[str, Any] = bot_data["misc"]
 
     bot = BotSettings(
         prefix=str(bot_data["prefix"]),
-        log_level=str(bot_data.get("log_level", "INFO")),
+        log_level=bot_data.get("log_level", "INFO"),
         owner_ids=list(bot_data["owner_ids"]),
         blacklisted_users=list(bot_data["blacklisted_users"]),
         user_training=bool(bot_data["user_training"]),
@@ -90,7 +89,6 @@ def _build_settings(data: Mapping[str, Any]) -> SettingsType:
     return SettingsType(
         bot=bot,
         name=str(data["name"]),
-        splash_text_loc=str(data["splash_text_loc"]),
         cog_settings=dict(data.get("cog_settings", {})),
     )
 

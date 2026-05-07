@@ -74,7 +74,7 @@ class SyncConnector:
 
     def can_react(self, message_id: int, channel_id: int) -> bool:
         """
-        Checks if goober can react to a messsage
+        Checks if goober can react to a message
         """
 
         return self.can_event(message_id, channel_id, "react")
@@ -87,18 +87,20 @@ class SyncConnector:
         return self.can_event(message_id, channel_id, "breaking_news")
 
     def can_convert(self, message_id: int, channel_id: int) -> bool:
+        logger.debug(f"[SyncConnector] Requesting convert event for message {message_id}")
+
         if not settings.bot.sync_hub.enabled:
             logger.info("Skipping sync hub check")
             return True
 
-        return self.can_event(message_id, channel_id, "convert")
+        can = self.can_event(message_id, channel_id, "convert")
+
+        logger.debug(f"[SyncConnector] Can convert message {message_id}: {can}")
+
+        return can
 
     def can_event(self, message_id: int, channel_id: int, event: str, retry_depth: int = 0) -> bool:
-        """
-        Checks if goober can send a breaking news alert
-        """
-
-        logger.debug(f"Checking {event} for message {message_id}")
+        logger.debug(f"[SyncConnector] Checking event `{event}` for message `{message_id}`")
 
         if not settings.bot.sync_hub.enabled:
             logger.info("Skipping sync hub check")

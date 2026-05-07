@@ -1,8 +1,7 @@
 import discord
 from discord.ext import commands
 import re
-from collections.abc import Callable, Iterator
-from typing import Dict, TypedDict, Any, List
+from typing import TypedDict, Any, Callable, Iterator
 from modules.settings import instance as settings_manager
 from modules.permission import requires_admin
 from modules.sentenceprocessing import send_message
@@ -17,7 +16,7 @@ settings = settings_manager.settings
 
 
 class SettingsType(TypedDict):
-    blacklisted_words: List[str]
+    blacklisted_words: list[str]
 
 
 default_settings: SettingsType = {
@@ -117,7 +116,7 @@ Reactions = [
     "That's {val} just in case you wanted to know",
     "that's {val} since you don't know how to Google...",
     "since your internet is down that's {val}",
-    ""
+    "That's {val}"
 ]
 
 
@@ -316,7 +315,7 @@ class Converter(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.description = "🔄|Automatically convert between units (Metric/Imperial) found in chats"
-        self.regexes: Dict[re.Pattern, Callable] = {
+        self.regexes: dict[re.Pattern, Callable] = {
             re.compile(r"(?:\s|^)(-?[0-9(.?|,?)]+)\s?(c|\*c)(\s|$)", re.IGNORECASE): Converters.from_celsius,
             re.compile(r"(?:\s|^)(-?[0-9(.?|,?)]+)\s?(f|\*f)(\s|$)", re.IGNORECASE): Converters.from_fahrenheit,
             re.compile(r"(?:\s|^)(-?[0-9(.?|,?)]+)\s?(m|meters)(\s|$)", re.IGNORECASE): Converters.from_meters,
@@ -336,7 +335,7 @@ class Converter(commands.Cog):
             re.compile(r"(?:\s|^)(-?[0-9(.?|,?)]+)\s?(oz|ounce|ounces)(\s|$)", re.IGNORECASE): Converters.from_ounces
         }
 
-    def __format_response(self, converted_values: List[ConvertedValue]) -> str:
+    def __format_response(self, converted_values: list[ConvertedValue]) -> str:
         logger.debug(f"Values: {converted_values}")
         message: str = ""
 
@@ -355,12 +354,9 @@ class Converter(commands.Cog):
                 logger.debug(temp_line)
 
             temp_line += data_line
-
             message += temp_line
 
-        message = random.choice(Reactions).format(val=message)
-
-        return "-# " + message
+        return f"-# {random.choice(Reactions).format(val=message)}"
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -369,10 +365,7 @@ class Converter(commands.Cog):
         if message.author.bot:
             return
 
-        if not synchub.can_convert(message.id, message.channel.id):
-            return
-
-        found_units_dict: Dict[int, ConvertedValue] = {}
+        found_units_dict: dict[int, ConvertedValue] = {}
 
         for regex, conversion_func in self.regexes.items():
             matches: Iterator[re.Match] | None = regex.finditer(message.content)
@@ -400,10 +393,13 @@ class Converter(commands.Cog):
                 if value is not None:
                     found_units_dict[match.start()] = value
 
-        unit_list: List[tuple[int, ConvertedValue]] = list(found_units_dict.items())
+        unit_list: list[tuple[int, ConvertedValue]] = list(found_units_dict.items())
         sorted_units = [val[1] for val in sorted(unit_list, key=lambda val: val[0])]
 
         if len(sorted_units) > 0:
+            # check for synchub down here so it only checks if the regex matches
+            if not synchub.can_convert(message.id, message.channel.id):
+                return
             await message.reply(self.__format_response(sorted_units))
 
     @requires_admin()

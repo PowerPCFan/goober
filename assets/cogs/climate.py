@@ -3,11 +3,10 @@ from discord.ext import commands
 import discord.ext
 import discord.ext.commands
 import math
-import time
 from modules.sentenceprocessing import send_message
 from modules.settings import instance as settings_manager
 from typing import TypedDict
-import requests_async
+import httpx
 import logging
 import datetime
 
@@ -29,7 +28,7 @@ class ThresholdValue(TypedDict):
 
 
 CO2_THRESHOLDS: dict[int, ThresholdValue] = {
-    400: {
+    300: {
         "label": "Great",
         "emoji": "🔵"
     },
@@ -37,13 +36,13 @@ CO2_THRESHOLDS: dict[int, ThresholdValue] = {
         "label": "Good",
         "emoji": "🟢"
     },
-    800: {
+    900: {
         "label": "OK",
-        "emoji": "🟢"
-    },
-    1000: {
-        "label": "Suboptimal",
         "emoji": "🟡"
+    },
+    1100: {
+        "label": "Suboptimal",
+        "emoji": "🟠"
     },
     1300: {
         "label": "Bad",
@@ -55,27 +54,31 @@ CO2_THRESHOLDS: dict[int, ThresholdValue] = {
     }
 }
 
-TEMP_THRESHOLDS: dict[int, ThresholdValue] = {
-    16: {
-        "label": "Cold",
-        "emoji": "🔵"
+INDOOR_TEMP_THRESHOLDS: dict[int, ThresholdValue] = {
+    64: {
+        'label': 'Cold',
+        'emoji': '🔵'
     },
-    18: {
-        "label": "Optimal",
-        "emoji": "🟢"
+    67: {
+        'label': 'Optimal',
+        'emoji': '🟢'
     },
-    21: {
-        "label": "Warm",
-        "emoji": "🟡"
+    73: {
+        'label': 'Warm',
+        'emoji': '🟡'
     },
-    24: {
-        "label": "Hot",
-        "emoji": "🔴"
+    76: {
+        'label': 'Hot',
+        'emoji': '🔴'
     }
 }
 
 HUMIDITY_THRESHOLDS: dict[int, ThresholdValue] = {
     0: {
+        "label": "Extremely dry",
+        "emoji": "🔴"
+    },
+    20: {
         "label": "Too dry",
         "emoji": "🟡"
     },
@@ -83,24 +86,36 @@ HUMIDITY_THRESHOLDS: dict[int, ThresholdValue] = {
         "label": "Optimal",
         "emoji": "🟢"
     },
-    65: {
+    60: {
         "label": "Too damp",
         "emoji": "🟡"
+    },
+    80: {
+        "label": "Extremely damp",
+        "emoji": "🔴"
     }
 }
 
 RESISTANCE_THRESHOLDS: dict[int, ThresholdValue] = {
-    20_000: {
-        "label": "Bad",
-        "emoji": "🟡"
+    10: {
+        "label": "Very Bad",
+        "emoji": "🔴"
     },
-    90_000: {
+    50: {
+        "label": "Poor",
+        "emoji": "🟠"
+    },
+    150: {
         "label": "OK",
         "emoji": "🟡"
     },
-    120_000: {
+    300: {
         "label": "Good",
         "emoji": "🟢"
+    },
+    1000: {
+        "label": "Excellent",
+        "emoji": "🔵"
     }
 }
 
@@ -151,57 +166,57 @@ PM100_THRESHOLDS: dict[int, ThresholdValue] = {
 }
 
 OUTDOOR_TEMP_THRESHOLDS: dict[int, ThresholdValue] = {
-    -50: {
+    -10: {
         "label": "Extremely frigid",
         "emoji": "⚫"
     },
-    -25: {
+    5: {
         "label": "Very frigid",
         "emoji": "🟣"
     },
-    -20: {
+    20: {
         "label": "Very cold",
         "emoji": "🔵"
     },
-    -15: {
+    32: {
         "label": "Cold",
         "emoji": "🔵"
     },
-    -10: {
+    40: {
         "label": "Mildly cold",
         "emoji": "🔵"
     },
-    -5: {
-        "label": "Chilly",
-        "emoji": "⚪"
-    },
-    0: {
+    45: {
         "label": "Cool",
         "emoji": "⚪"
     },
-    5: {
+    50: {
         "label": "Brisk",
         "emoji": "🟢"
     },
-    10: {
+    60: {
         "label": "Mild",
         "emoji": "🟢"
     },
-    15: {
+    70: {
         "label": "Warm",
         "emoji": "🟡"
     },
-    20: {
+    75: {
         "label": "Very warm",
         "emoji": "🟡"
     },
-    25: {
+    80: {
         "label": "Hot",
         "emoji": "🟠"
     },
-    30: {
+    85: {
         "label": "Very hot",
         "emoji": "🔴"
+    },
+    90: {
+        "label": "Extremely hot",
+        "emoji": "🟣"
     }
 }
 
@@ -268,28 +283,24 @@ SUN_POSITION_THRESHOLD: dict[int, ThresholdValue] = {
 }
 
 PRESSURE_THRESHOLDS: dict[int, ThresholdValue] = {
-    900: {
-        "label": "Extremely low pressure",
-        "emoji": "🔴"
-    },
     980: {
-        "label": "Very low pressure",
+        "label": "Stormy",
         "emoji": "🟠"
     },
     995: {
-        "label": "Low pressure",
+        "label": "Fair",
         "emoji": "🟡"
     },
     1005: {
-        "label": "Normal pressure",
+        "label": "Normal",
         "emoji": "🟢"
     },
     1015: {
-        "label": "High pressure",
+        "label": "Clear",
         "emoji": "🔵"
     },
-    1025: {
-        "label": "Very high pressure",
+    1030: {
+        "label": "Very high",
         "emoji": "🟣"
     }
 }
@@ -324,7 +335,6 @@ class Climate(commands.Cog):
         }
 
         for value, threshold in sorted(thresholds.items(), key=lambda item: item[0]):
-            logger.info(str(current_value) + " " + str(value))
             if current_value < value:
                 break
 
@@ -332,12 +342,22 @@ class Climate(commands.Cog):
 
         return found_threshold
 
-    def format_embed(self, label: str, unit: str, value: float, threshold: dict[int, ThresholdValue]) -> dict:
-        ranking = self.get_ranking(value, threshold)
-        return {
-            "name": f"{label} {ranking['emoji']}",
-            "value": f"{round(value, 2)} {unit} (**{ranking['label']}**)"
-        }
+    def format_embed(self, label: str, unit: str, value: float, threshold: dict[int, ThresholdValue] | None = None) -> dict:
+        if unit and unit[0] == "-":
+            sep = ""
+            unit = unit[1:]
+        else:
+            sep = " "
+
+        name = f"{label}"
+        val = f"**{round(value, 2)}{sep}{unit}**"
+
+        if threshold:
+            ranking = self.get_ranking(value, threshold)
+            name += f" {ranking['emoji']}"
+            val += f" ({ranking['label']})"
+
+        return {"name": name, "value": val}
 
     def get_sun_angle(self) -> float:
         settings: SettingsType = settings_manager.get_plugin_settings("climate", default_settings)  # type: ignore
@@ -365,8 +385,8 @@ class Climate(commands.Cog):
 
     @commands.command()
     async def indoors(self, ctx: commands.Context):
-        res = await requests_async.get("http://192.168.1.45:8080/latest/indoor")
-        data: Indoor = res.json()
+        async with httpx.AsyncClient() as client:
+            data: Indoor = (await client.get("http://192.168.1.45:8080/latest/indoor")).json()
 
         embed = discord.Embed(
             title="Climate data",
@@ -379,16 +399,19 @@ class Climate(commands.Cog):
         except ValueError:
             timestamp = 0
 
-        embed.add_field(**self.format_embed("CO2", "PPM", data['carbon_dioxide'], CO2_THRESHOLDS))
-        embed.add_field(**self.format_embed("Temperature", "°F", data["temperature"] * 9/5 + 32, TEMP_THRESHOLDS))
-        embed.add_field(**self.format_embed("Humidity", "%RH", data["humidity"], HUMIDITY_THRESHOLDS))
+        embed.add_field(**self.format_embed("Temperature", "-°F", (data["temperature"] * (9 / 5)) + 32, INDOOR_TEMP_THRESHOLDS))
+        embed.add_field(**self.format_embed("Humidity", "-% RH", data["humidity"], HUMIDITY_THRESHOLDS))
+        embed.add_field(**self.format_embed("Pressure", "hPa", data['pressure'], PRESSURE_THRESHOLDS))
+
         embed.add_field(**self.format_embed("Gas", "kΩ", data['gas'], RESISTANCE_THRESHOLDS))
-        embed.add_field(**self.format_embed("Pressure", "inHg", data['pressure'] * 0.02953, PRESSURE_THRESHOLDS))
-        embed.add_field(**self.format_embed("PM1.0", "µg/m³", data['pm1_0'], PM25_THRESHOLDS))
+        embed.add_field(**self.format_embed("CO2", "PPM", data['carbon_dioxide'], CO2_THRESHOLDS))
+        embed.add_field(**self.format_embed("VOCs", "VOC Index", data['vocs']))
+
+        embed.add_field(**self.format_embed("PM1.0", "µg/m³", data['pm1_0']))
         embed.add_field(**self.format_embed("PM2.5", "µg/m³", data['pm2_5'], PM25_THRESHOLDS))
         embed.add_field(**self.format_embed("PM10.0", "µg/m³", data['pm10_0'], PM100_THRESHOLDS))
 
-        embed.set_footer(text=f"Last updated: {time.strftime('%H:%M:%S %d/%m/%Y', time.gmtime(timestamp))} (UTC)")
+        embed.timestamp = datetime.datetime.fromtimestamp(timestamp)
 
         await send_message(ctx, embed=embed)
 

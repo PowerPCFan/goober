@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 from modules.logger import GooberFormatter
 import tracemalloc
 import os
@@ -12,7 +11,6 @@ import discord
 from discord.ext import commands
 from better_profanity import profanity
 import markovify
-from modules.sync_connector import instance as synchub
 from modules.markovmemory import load_memory, load_markov_model, save_memory, train_markov_model
 from modules.sentenceprocessing import append_mentions_to_18digit_integer, preprocess_message
 from modules.unhandledexception import handle_exception, handle_exception_with_context
@@ -39,9 +37,6 @@ logger.info("Starting...")
 messages_recieved = 0
 
 settings = settings_manager.settings
-
-splash_text = Path(settings.splash_text_loc).read_text(encoding="UTF-8")
-print(splash_text)
 
 sys.excepthook = handle_exception
 tracemalloc.start()
@@ -79,6 +74,7 @@ bot: commands.Bot = commands.Bot(
     allowed_mentions=discord.AllowedMentions(
         everyone=False, roles=False, users=False, replied_user=True
     ),
+    help_command=None
 )
 
 # Load memory and Markov model for text generation
@@ -91,20 +87,17 @@ if not markov_model:
 
 
 # connect to synchub
-synchub.try_to_connect()
+# synchub.try_to_connect()
 
 generated_sentences: Set[str] = set()
 used_words: Set[str] = set()
 
 
-async def load_cogs_from_folder(bot: commands.Bot, folder_name="assets/cogs"):
+async def load_cogs_from_folder(bot: commands.Bot, folder_name: str, internal: bool = False):
     for filename in [file for file in os.listdir(folder_name) if file.endswith(".py")]:
         cog_name: str = filename[:-3]
 
-        if (
-            "internal" not in folder_name
-            and cog_name not in settings.bot.enabled_cogs
-        ):
+        if not internal and cog_name not in settings.bot.enabled_cogs:
             logger.debug(f"Skipping cog {cog_name} (not in enabled cogs)")
             continue
 
@@ -112,9 +105,9 @@ async def load_cogs_from_folder(bot: commands.Bot, folder_name="assets/cogs"):
 
         try:
             await bot.load_extension(module_path)
-            logger.info(f"{'Loaded cog:'} {cog_name}")
+            logger.info(f"Loaded cog: {cog_name}")
         except Exception as e:
-            logger.error(f"{'Failed to load cog:'} {cog_name} {e}")
+            logger.error(f"Failed to load cog: {cog_name} {e}")
             traceback.print_exc()
 
 
@@ -126,8 +119,8 @@ async def on_ready() -> None:
     if launched:
         return
 
-    await load_cogs_from_folder(bot, "assets/cogs/internal")
-    await load_cogs_from_folder(bot)
+    await load_cogs_from_folder(bot, "assets/cogs/internal", internal=True)
+    await load_cogs_from_folder(bot, "assets/cogs")
     try:
         synced: list[discord.app_commands.AppCommand] = await bot.tree.sync()
 
@@ -166,6 +159,7 @@ async def on_ready() -> None:
     launched = True
 
     logger.info(f"Running as {bot.user}")
+    logger.info(f"Guilds: {", ".join([guild.name for guild in bot.guilds])}")
 
 
 @bot.event

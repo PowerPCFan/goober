@@ -1,5 +1,4 @@
 import os
-from typing import Dict, List
 import discord
 from discord.ext import commands
 import discord.ext
@@ -34,41 +33,33 @@ class BaseCommands(commands.Cog):
             color=discord.Colour(0x000000),
         )
 
-        command_categories = {
-            "General": [
-                "mem",
-                "talk",
-                "about",
-                "ping",
-                "impact",
-                "demotivator",
-                "help",
-            ],
-            "Administration": ["stats", "retrain", "setlanguage", "add_owner", "remove_owner", "blacklist_user", "unblacklist_user", "restart", "force_update"],
-            "Cog management": ["enable", "load", "unload", "disable", "reload", "listcogs"],
-            "Synchub": ["synchub_test", "synchub_connect", "synchub_stats"]
+        category_aliases: dict[str, tuple[str, str]] = {
+            "BaseCommands": ("General", "🌐 | General commands for stuff"),
         }
 
-        cog_commands: Dict[str, List[str]] = {}
-        category_descriptions: Dict[str, str] = {
-            "Administration": "🛠️|Commands meant for stuff like stuff",
-            "Cog management": "💼|Commands for managing cogs",
-            "Synchub": "📨|Commands for managing Sync hub",
-            "General": "🌐|General commands for stuff"
+        category_descriptions: dict[str, str] = {
+            "Administration": "🛠️ | Bot management commands",
+            "Cog Management": "💼 | Commands for managing cogs",
+            "Sync Hub": "📨 | Commands for managing Sync hub",
+            "General": "🌐 | General commands for stuff"
         }
+
+        command_categories: dict[str, list[str]] = {}
 
         for cog_name, cog in self.bot.cogs.items():
+            display_name, default_description = category_aliases.get(
+                cog_name,
+                (cog_name, cog.description or "No description"),
+            )
+            category_descriptions.setdefault(display_name, default_description)
+
+            commands_list = command_categories.setdefault(display_name, [])
             for command in cog.get_commands():
-                if any([command.name in commands for commands in list(command_categories.values())]):
+                if command.hidden:
                     continue
+                commands_list.append(command.name)
 
-                if cog_commands.get(cog_name) is None:
-                    cog_commands[cog_name] = []
-
-                cog_commands[cog_name].append(command.name)
-            category_descriptions[cog_name] = cog.description
-
-        for category, commands_list in (command_categories | cog_commands).items():
+        for category, commands_list in command_categories.items():
             commands_in_category: str = "\n".join([f"{settings.bot.prefix}**{command}**" for command in commands_list])
             description = category_descriptions.get(category, 'No description')
             emoji = ""
@@ -161,16 +152,12 @@ class BaseCommands(commands.Cog):
             inline=False,
         )
 
-        with open(settings.splash_text_loc, "r") as f:
-            splash_text = "".join(f.readlines())
-
         embed.add_field(
-            name=f"{'Variable Info'}",
-            value=f"""{"Name: {NAME} \nPrefix: {PREFIX} \nOwner ID: {ownerid}\nPing line: {PING_LINE} \nMemory Sharing Enabled: {showmemenabled} \nUser Training Enabled: {USERTRAIN_ENABLED}\nSong: {song} \nSplashtext: ```{splashtext}```".format(  # noqa: E501 somehow this is longer than 200 chars
+            name="Variable Info",
+            value=f"""{"Name: {NAME} \nPrefix: {PREFIX} \nOwner ID: {ownerid}\nPing line: {PING_LINE} \nMemory Sharing Enabled: {showmemenabled} \nUser Training Enabled: {USERTRAIN_ENABLED}\nSong: {song}".format(  # noqa: E501 somehow this is longer than 200 chars
                 NAME=settings.name, PREFIX=settings.bot.prefix, ownerid=settings.bot.owner_ids[0],
                 PING_LINE=settings.bot.misc.ping_line, showmemenabled=settings.bot.allow_show_mem_command,
-                USERTRAIN_ENABLED=settings.bot.user_training, song=settings.bot.misc.activity.content,
-                splashtext=splash_text
+                USERTRAIN_ENABLED=settings.bot.user_training, song=settings.bot.misc.activity.content
             )}""",
             inline=False,
         )
@@ -239,5 +226,4 @@ class BaseCommands(commands.Cog):
 
 async def setup(bot: discord.ext.commands.Bot):
     print("Setting up base_commands")
-    bot.remove_command("help")
     await bot.add_cog(BaseCommands(bot))
