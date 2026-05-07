@@ -18,7 +18,7 @@ def handle_exception(exc_type, exc_value, exc_traceback, *, context: str | None 
     logger.error("=====BEGINNING OF TRACEBACK=====")
     traceback.print_exception(exc_type, exc_value, exc_traceback)
     logger.error("========END OF TRACEBACK========")
-    logger.error('An unhandled exception occurred. Please report this issue on GitHub.')
+    logger.error('An unhandled exception occurred.')
 
     if context:
         logger.error(f"Context: {context}")
@@ -27,8 +27,13 @@ def handle_exception(exc_type, exc_value, exc_traceback, *, context: str | None 
 async def handle_exception_with_context(ctx: Context, exc_type, exc_value, exc_traceback, *, context: str | None = None):
     handle_exception(exc_type, exc_value, exc_traceback, context=context)
 
-    embed = discord.Embed(color=0xfc1c03)
-    embed.title = "Command failed with exception"
-    embed.description = "```" + "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))[-4000:] + "```"
+    embed = discord.Embed(
+        title="Command failed",
+        description=f"`{repr(exc_type).replace("<class '", "").replace("'>", "")}: {str(exc_value)}`",
+        color=discord.Color.red()
+    )
+
+    embed.set_footer(text="Bot Admin: Please check log.txt for more information")
+    # embed.description = "```" + "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))[-4000:] + "```"
 
     await send_message(ctx, embed=embed)
