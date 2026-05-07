@@ -33,7 +33,12 @@ class BaseCommands(commands.Cog):
         )
 
         category_aliases: dict[str, str] = {
-            "BaseCommands": "General"
+            "BaseCommands": "General",
+            "SyncHubManagement": "Sync Hub",
+            "CogManager": "Cog Management",
+            "PermissionManager": "Permission Management",
+            "Markov": "Markov model",
+            "SongChanger": "Song Changer"
         }
 
         command_categories: dict[str, list[str]] = {}
@@ -50,6 +55,9 @@ class BaseCommands(commands.Cog):
                 commands_list.append(command.name)
 
         for category, commands_list in command_categories.items():
+            if not commands_list:
+                continue
+
             commands_in_category: str = "\n".join([f"{settings.bot.prefix}**{command}**" for command in commands_list])
             description = category_descriptions.get(category, 'No description')
             emoji = ""
