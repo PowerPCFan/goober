@@ -25,7 +25,7 @@ cache_footer = "Cached data: run ?!lan_rmcache <ip|mac> or ?!lan_rmcache to clea
 
 
 class IPAddress(str):
-    def __new__(cls, value: str) -> 'IPAddress | None':
+    def __new__(cls, value: str) -> 'IPAddress':
         try:
             if icmplib.is_ipv6_address(value):
                 raise ValueError("IPv6 addresses are not supported yet.")
@@ -43,8 +43,15 @@ class IPAddress(str):
                 raise ValueError(f"IP address {value} is not a valid local IPv4 address.")
 
             return super().__new__(cls, value)
-        except Exception:
+        except Exception as e:
             logger.exception("Error creating IPAddress")
+            raise Exception("Error creating IPAddress") from e
+
+    @classmethod
+    def parse(cls, value: str) -> 'IPAddress | None':
+        try:
+            return cls(value)
+        except Exception:
             return None
 
 
@@ -192,16 +199,17 @@ class LAN(commands.Cog):
 
     def _resolve_target(self, cache: LanCache, target: str) -> str | None:
         resolved = cache["aliases"].get(target.lower())
-        if resolved and IPAddress(resolved):
+
+        if resolved and IPAddress.parse(resolved):
             return resolved
 
         for entry in cache["favorites"]:
             if entry.get("name", "").lower() == target.lower():
                 favorite_target = entry.get("target")
-                if favorite_target and IPAddress(favorite_target):
+                if favorite_target and IPAddress.parse(favorite_target):
                     return favorite_target
 
-        ip_addr = IPAddress(target)
+        ip_addr = IPAddress.parse(target)
         if ip_addr:
             return str(ip_addr)
 
@@ -285,7 +293,7 @@ class LAN(commands.Cog):
         cache: LanCache,
         ip: str,
     ) -> tuple[str | None, bool]:
-        ip_addr = IPAddress(ip)
+        ip_addr = IPAddress.parse(ip)
         if not ip_addr:
             return None, False
 
@@ -312,7 +320,7 @@ class LAN(commands.Cog):
         cache: LanCache,
         ip: str,
     ) -> tuple[str | None, bool]:
-        ip_addr = IPAddress(ip)
+        ip_addr = IPAddress.parse(ip)
         if not ip_addr:
             return None, False
 
@@ -373,7 +381,7 @@ class LAN(commands.Cog):
             await send_error(ctx, description=f"Unknown target `{target}`. Use an IP or add an alias.")
             return
 
-        ip_addr: IPAddress | None = IPAddress(resolved)
+        ip_addr: IPAddress | None = IPAddress.parse(resolved)
         if not ip_addr:
             await send_error(ctx, description=f"Error parsing IP address `{resolved}`. Ensure you provided a valid IPv4 address.")
             return
@@ -466,12 +474,7 @@ class LAN(commands.Cog):
 
             return
 
-        ip_addr: IPAddress | None = None
-
-        try:
-            ip_addr = IPAddress(ip)
-        except ValueError:
-            ip_addr = None
+        ip_addr: IPAddress | None = IPAddress.parse(ip)
 
         if not ip_addr:
             if regexp.fullmatch(
@@ -506,7 +509,7 @@ class LAN(commands.Cog):
     @requires_admin()
     @commands.command(name="lan_addalias", description="Set an alias for a LAN IP")
     async def lan_alias_set(self, ctx: commands.Context, ip: str, alias: str) -> None:
-        ip_addr: IPAddress | None = IPAddress(ip)
+        ip_addr: IPAddress | None = IPAddress.parse(ip)
         if not ip_addr:
             await send_error(ctx, description=f"Error parsing IP address `{ip}`. Ensure you provided a valid IPv4 address.")
             return
@@ -699,7 +702,7 @@ class LAN(commands.Cog):
         failures = 0
         for index, (display_name, target) in enumerate(targets):
             resolved = self._normalize_target(cache, target) or target
-            ip_addr = IPAddress(resolved)
+            ip_addr = IPAddress.parse(resolved)
 
             if not ip_addr:
                 lines[index] = f"- **{display_name}** (`{resolved}`): :warning: Invalid IP"
