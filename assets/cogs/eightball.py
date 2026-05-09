@@ -58,8 +58,13 @@ class Eightball(commands.Cog):
 
         choice = random.choice(self.responses)
         output_path = self.data / f"8ball-{ctx.message.id}.gif"
+
         renderer = EightballRenderer(font_path=self.tnr)
-        renderer.generate_eightball_gif(choice, output_path, question, ctx.author.name)
+        # renderer.generate_eightball_gif(choice, output_path, question, ctx.author.name)
+        await asyncio.to_thread(
+            renderer.generate_eightball_gif, choice,
+            output_path, question, ctx.author.name
+        )
 
         # Send GIF
         await ctx.send(file=discord.File(output_path))
