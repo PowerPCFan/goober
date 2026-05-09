@@ -17,3 +17,6 @@ pytubefix
 python-slugify
 httpx
 icmplib
+
+moderngl
+numpy
