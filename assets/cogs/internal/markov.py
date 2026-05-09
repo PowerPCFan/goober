@@ -31,6 +31,8 @@ settings = settings_manager.settings
 class Markov(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
+        self.name = "Markov model"
+        self.description = "🧠 | Commands for Goober's Markov model"
         self.model: markovify.NewlineText | None = load_markov_model()
 
     @requires_admin()

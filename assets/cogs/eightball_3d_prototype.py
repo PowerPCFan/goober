@@ -1,11 +1,9 @@
-import math
 import pathlib
 import random
 from discord.ext import commands
 import discord
 import asyncio
 from PIL import Image, ImageDraw, ImageFont
-from PIL.Image import Resampling
 
 
 class Eightball(commands.Cog):
@@ -97,7 +95,15 @@ class EightballRenderer:
         self.triangle_height = triangle_height
         self.font_path = font_path
 
-    def render_ball_base(self, show_badge: bool) -> Image.Image:
+    def render_ball_base(
+        self,
+        show_badge: bool,
+        light_phase: float = -0.5,
+        badge_offset: tuple[int, int] = (0, 0),
+        badge_alpha: int = 255,
+        badge_scale: tuple[float, float] = (1.0, 1.0),
+        badge_clip: float = 0.0,
+    ) -> Image.Image:
         img = Image.new("RGBA", (self.size, self.size), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
         draw.ellipse(
@@ -107,31 +113,57 @@ class EightballRenderer:
                 self.center + self.ball_radius,
                 self.center + self.ball_radius,
             ),
-            fill="black",
+            fill=(8, 8, 8, 255),
+        )
+        draw.ellipse(
+            (
+                self.center - self.ball_radius,
+                self.center - self.ball_radius,
+                self.center + self.ball_radius,
+                self.center + self.ball_radius,
+            ),
+            outline=(0, 0, 0, 220),
+            width=max(1, int(2 * self.scale)),
         )
         if show_badge:
-            draw.ellipse(
-                (
-                    self.center - self.badge_radius,
-                    self.center - self.badge_radius,
-                    self.center + self.badge_radius,
-                    self.center + self.badge_radius,
-                ),
-                fill="white",
+            badge = Image.new("RGBA", (self.size, self.size), (0, 0, 0, 0))
+            bdraw = ImageDraw.Draw(badge)
+            badge_w = self.badge_radius * badge_scale[0]
+            badge_h = self.badge_radius * badge_scale[1]
+            badge_box = (
+                self.center - badge_w + badge_offset[0],
+                self.center - badge_h + badge_offset[1],
+                self.center + badge_w + badge_offset[0],
+                self.center + badge_h + badge_offset[1],
             )
+            bdraw.ellipse(badge_box, fill=(255, 255, 255, badge_alpha))
             badge_font = ImageFont.truetype(str(self.font_path), int(52 * self.scale))
-            bbox = draw.textbbox((0, 0), "8", font=badge_font)
+            bbox = bdraw.textbbox((0, 0), "8", font=badge_font)
             text_w = bbox[2] - bbox[0]
             text_h = bbox[3] - bbox[1]
-            text_x = self.center - text_w / 2
-            text_y = self.center - text_h / 2 - int(10 * self.scale)
+            text_x = self.center - text_w / 2 + badge_offset[0]
+            text_y = self.center - text_h / 2 - int(10 * self.scale) + badge_offset[1]
             for dx, dy in [(0, 0), (1, 0), (-1, 0), (2, 0), (-2, 0), (0, 1)]:
-                draw.text(
+                bdraw.text(
                     (text_x + dx, text_y + dy),
                     "8",
-                    fill="black",
+                    fill=(0, 0, 0, badge_alpha),
                     font=badge_font,
                 )
+            if badge_clip > 0:
+                mask = Image.new("L", (self.size, self.size), 0)
+                mdraw = ImageDraw.Draw(mask)
+                mdraw.ellipse(
+                    (
+                        self.center - self.ball_radius,
+                        self.center - self.ball_radius,
+                        self.center + self.ball_radius,
+                        self.center + self.ball_radius,
+                    ),
+                    fill=int(255 * (1.0 - badge_clip)),
+                )
+                badge.putalpha(Image.composite(badge.split()[-1], mask, mask))
+            img.alpha_composite(badge)
         return img
 
     def render_answer_overlay(self, text: str, opacity: int) -> Image.Image | None:
@@ -253,10 +285,23 @@ class EightballRenderer:
         )
         draw.text((text_x, text_y), safe_text, fill=(245, 245, 245, 230), font=font)
 
+    def _badge_motion(self, progress: float) -> tuple[tuple[int, int], tuple[float, float], int, float]:
+        progress = max(0.0, min(1.0, progress))
+        badge_offset_y = int(-self.badge_radius * (2.2 * progress))
+        badge_distortion = max(0.0, min(1.0, abs(badge_offset_y) / (self.badge_radius * 2.4)))
+        badge_offset = (0, badge_offset_y)
+        badge_scale = (
+            1.0 + 0.18 * badge_distortion,
+            max(0.1, 1.0 - 0.9 * badge_distortion),
+        )
+        badge_alpha = int(255 * (1.0 - badge_distortion))
+        badge_clip = max(0.0, min(1.0, (badge_distortion - 0.55) / 0.45))
+        return badge_offset, badge_scale, badge_alpha, badge_clip
+
     def generate_eightball_gif(self, choice: str, output_path: pathlib.Path, question: str, username: str) -> None:
         frames: list[Image.Image] = []
-        base_badge = self.render_ball_base(True)
-        base_answer = self.render_ball_base(False)
+        base_badge = self.render_ball_base(True, light_phase=-0.6)
+        base_answer = self.render_ball_base(False, light_phase=0.6)
         footer_text = self._footer_text(question, username)
 
         for _ in range(10):
@@ -270,21 +315,28 @@ class EightballRenderer:
         ]
         shake_offsets = [int(offset * self.scale) for offset in base_offsets]
         for offset in shake_offsets:
+            base = self.render_ball_base(True)
             frame = Image.new("RGBA", (self.size, self.size), (0, 0, 0, 0))
-            frame.paste(base_badge, (offset, 0))
+            frame.paste(base, (offset, 0))
             self._draw_footer_text(frame, footer_text)
             frames.append(frame)
 
-        flip_frames = 16
+        flip_frames = 20
         switch_at = 0.5
         for i in range(flip_frames):
             t = i / (flip_frames - 1)
-            scale_y = 0.08 + 0.92 * abs(math.cos(math.pi * t))
-            scaled_height = max(1, int(self.size * scale_y))
-            base = base_badge if t < switch_at else base_answer
-            scaled = base.resize((self.size, scaled_height), resample=Resampling.BICUBIC)
-            frame = Image.new("RGBA", (self.size, self.size), (0, 0, 0, 0))
-            frame.paste(scaled, (0, (self.size - scaled_height) // 2))
+            light_phase = (t * 2 - 1) * 0.9
+            badge_progress = max(0.0, min(1.0, (t / switch_at)))
+            badge_offset, badge_scale, badge_alpha, badge_clip = self._badge_motion(badge_progress)
+            base = self.render_ball_base(
+                t < switch_at,
+                light_phase=light_phase,
+                badge_offset=badge_offset,
+                badge_alpha=badge_alpha,
+                badge_scale=badge_scale,
+                badge_clip=badge_clip,
+            )
+            frame = base.copy()
             self._draw_footer_text(frame, footer_text)
             frames.append(frame)
 

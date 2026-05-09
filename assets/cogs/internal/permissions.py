@@ -9,6 +9,8 @@ settings = settings_manager.settings
 class PermissionManager(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.name = "Permission Manager"
+        self.description = "🔐 | Commands for managing bot permissions"
 
     @requires_admin()
     @commands.command()

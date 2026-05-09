@@ -10,6 +10,7 @@ settings = settings_manager.settings
 class SyncHubManagement(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.name = "Sync Hub"
         self.description = "📨|Commands for managing Goober Sync Hub"
 
     @requires_admin()

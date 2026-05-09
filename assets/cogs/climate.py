@@ -343,7 +343,7 @@ class Climate(commands.Cog):
         return found_threshold
 
     def format_embed(self, label: str, unit: str, value: float, threshold: dict[int, ThresholdValue] | None = None) -> dict:
-        if unit and unit[0] == "-":
+        if unit and unit.startswith("-"):
             sep = ""
             unit = unit[1:]
         else:
@@ -390,7 +390,8 @@ class Climate(commands.Cog):
 
         embed = discord.Embed(
             title="Climate data",
-            description="Information about my indoor climate"
+            description="Information about my indoor climate",
+            color=discord.Color.blue()
         )
 
         isotime = str(data.get("time", "1970-01-01T00:00:00+00:00"))

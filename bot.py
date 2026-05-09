@@ -1,4 +1,6 @@
 import logging
+from pathlib import Path
+from modules.embeds import send_error
 from modules.logger import GooberFormatter
 import tracemalloc
 import os
@@ -25,7 +27,12 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(console_level)
 console_handler.setFormatter(GooberFormatter())
 
-file_handler = logging.FileHandler("log.txt", mode="w+", encoding="UTF-8")
+log_dir = Path(__file__).parent / "logs"
+log_dir.mkdir(exist_ok=True)
+log_file = log_dir / f"goober_{time.strftime('%Y-%m-%d_%H-%M-%S')}.log"
+log_file.touch(exist_ok=True)
+
+file_handler = logging.FileHandler(log_file, encoding="UTF-8")
 file_handler.setLevel(logging.DEBUG)
 file_handler.setFormatter(GooberFormatter(colors=False))
 
@@ -163,6 +170,9 @@ async def on_ready() -> None:
 async def on_command_error(ctx: commands.Context, error: commands.CommandError) -> None:
     if isinstance(error, commands.CheckFailure):
         # should be handled by permission denied message
+        return
+    if isinstance(error, commands.CommandNotFound):
+        await send_error(ctx, description="Command not found!")
         return
     if isinstance(error, commands.CommandInvokeError):
         original: Exception = error.original

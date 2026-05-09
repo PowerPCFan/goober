@@ -33,7 +33,7 @@ async def handle_exception_with_context(ctx: Context, exc_type, exc_value, exc_t
         color=discord.Color.red()
     )
 
-    embed.set_footer(text="Bot Admin: Please check log.txt for more information")
+    embed.set_footer(text="Bot Admin: Please check logs for more information")
     # embed.description = "```" + "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))[-4000:] + "```"
 
     await send_message(ctx, embed=embed)

@@ -14,6 +14,7 @@ COG_PREFIX = "assets.cogs."
 class CogManager(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot: commands.Bot = bot
+        self.name = "Cog Management"
         self.description = "💼|Commands for managing cogs"
 
     @requires_admin()
@@ -21,7 +22,7 @@ class CogManager(commands.Cog):
     async def enable(self, ctx, cog_name: str):
         try:
             await self.bot.load_extension(COG_PREFIX + cog_name)
-            await send_success(ctx, title="Enabled Cog", description=f"Enabled cog `{cog_name}` successfully.")
+            await send_success(ctx, title="Cog Enabled", description=f"Enabled cog `{cog_name}` successfully.")
             settings.bot.enabled_cogs.append(cog_name)
             settings_manager.add_admin_log_event(
                 {
@@ -46,7 +47,7 @@ class CogManager(commands.Cog):
 
         try:
             await self.bot.load_extension(COG_PREFIX + cog_name)
-            await send_success(ctx, title="Loaded Cog", description=f"Loaded cog `{cog_name}` successfully.")
+            await send_success(ctx, title="Cog Loaded", description=f"Loaded cog `{cog_name}` successfully.")
         except Exception as e:
             await send_error(ctx, description=f"Error loading cog `{cog_name}`: {e}")
 
@@ -58,7 +59,7 @@ class CogManager(commands.Cog):
             return
         try:
             await self.bot.unload_extension(COG_PREFIX + cog_name)
-            await send_success(ctx, title="Unloaded Cog", description=f"Unloaded cog `{cog_name}` successfully.")
+            await send_success(ctx, title="Cog Unloaded", description=f"Unloaded cog `{cog_name}` successfully.")
         except Exception as e:
             await send_error(ctx, description=f"Error unloading cog `{cog_name}`: {e}")
 
@@ -70,7 +71,7 @@ class CogManager(commands.Cog):
             return
         try:
             await self.bot.unload_extension(COG_PREFIX + cog_name)
-            await send_success(ctx, title="Disabled Cog", description=f"Disabled cog `{cog_name}` successfully.")
+            await send_success(ctx, title="Cog Disabled", description=f"Disabled cog `{cog_name}` successfully.")
             settings.bot.enabled_cogs.remove(cog_name)
             settings_manager.add_admin_log_event(
                 {
@@ -95,7 +96,7 @@ class CogManager(commands.Cog):
         try:
             await self.bot.unload_extension(COG_PREFIX + cog_name)
             await self.bot.load_extension(COG_PREFIX + cog_name)
-            await send_success(ctx, title="Reloaded Cog", description=f"Reloaded cog `{cog_name}` successfully.")
+            await send_success(ctx, title="Cog Reloaded", description=f"Reloaded cog `{cog_name}` successfully.")
         except Exception as e:
             await send_error(ctx, description=f"Error reloading cog `{cog_name}`: {e}")
 

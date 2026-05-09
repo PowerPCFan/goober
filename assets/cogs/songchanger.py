@@ -9,6 +9,7 @@ from typing import get_args
 class SongChanger(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.name = "Song Changer"
         self.description = "🎧|Changes the bot's 'Listening to' status"
 
     @requires_admin()

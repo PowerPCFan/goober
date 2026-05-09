@@ -93,7 +93,7 @@ class LAN(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.description = "🌐 | Commands for LAN device info"
+        self.description = "🌐 | Multi-purpose LAN cog for checking various aspects of your local network"
         self.cache = pathlib.Path(__file__).parent.parent.parent / "data" / "lan_cache.json"
 
     def _ping_device(self, ip: IPAddress, ping_count: int = 1) -> icmplib.Host | None:

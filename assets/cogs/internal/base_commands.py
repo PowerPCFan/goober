@@ -18,7 +18,8 @@ logger = logging.getLogger("goober")
 class BaseCommands(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
-        self.description = "🌐 | General commands for various stuff"
+        self.name = "General"
+        self.description = "🌐 | Commands for various stuff"
 
     @commands.command()
     async def help(self, ctx: commands.Context, layout: str = "h") -> None:
@@ -28,21 +29,11 @@ class BaseCommands(commands.Cog):
             color=discord.Colour(0x000000),
         )
 
-        category_aliases: dict[str, str] = {
-            "BaseCommands": "General",
-            "SyncHubManagement": "Sync Hub",
-            "CogManager": "Cog Management",
-            "PermissionManager": "Permission Management",
-            "Markov": "Markov model",
-            "SongChanger": "Song Changer",
-            "WhoAmI": "Who Am I?"
-        }
-
         command_categories: dict[str, list[str]] = {}
         category_descriptions: dict[str, str] = {}
 
         for cog_name, cog in self.bot.cogs.items():
-            display_name = category_aliases.get(cog_name, cog_name)
+            display_name = getattr(cog, "name", cog_name)
             commands_list = command_categories.setdefault(display_name, [])
             category_descriptions.setdefault(display_name, getattr(cog, "description", "No description"))
 

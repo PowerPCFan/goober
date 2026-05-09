@@ -5,6 +5,8 @@ from discord.ext import commands
 class WhoAmI(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.name = "Who Am I?"
+        self.description = "👤 | A command to show your user information"
 
     @commands.command()
     async def whoami(self, ctx: commands.Context):
