@@ -4,6 +4,7 @@ import re
 import discord
 from discord.ext import commands
 
+from modules.embeds import send_error, send_info
 from modules.markovmemory import (
     load_markov_model,
     save_markov_model,
@@ -30,14 +31,17 @@ settings = settings_manager.settings
 class Markov(commands.Cog):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
-
         self.model: markovify.NewlineText | None = load_markov_model()
 
     @requires_admin()
     @commands.command()
     async def retrain(self, ctx: commands.Context):
         message_ref: discord.Message | None = await send_message(
-            ctx, f"{'Retraining the Markov model... Please wait.'}"
+            ctx, embed=discord.Embed(
+                title="Retraining Model",
+                description="Retraining the Markov model, please wait...",
+                color=discord.Color.orange()
+            )
         )
 
         if message_ref is None:
@@ -48,17 +52,22 @@ class Markov(commands.Cog):
             with open(settings.bot.active_memory, "r") as f:
                 memory: list[str] = json.load(f)
         except FileNotFoundError:
-            await send_message(ctx, f"{'Error: memory file not found!'}")
+            await send_error(ctx, description="Memory file not found!")
             return
         except json.JSONDecodeError:
-            await send_message(ctx, f"{'Error: memory file is corrupt!'}")
+            await send_error(ctx, description="Memory file is corrupt!")
             return
 
         data_size: int = len(memory)
 
         processing_message_ref: discord.Message | None = await send_message(
-            ctx, f"Processing {data_size} data points..."
+            ctx, embed=discord.Embed(
+                title="Processing Data",
+                description=f"Processing `{data_size}` data points...",
+                color=discord.Color.orange()
+            )
         )
+
         if processing_message_ref is None:
             logger.error("Couldnt find message processing message!")
 
@@ -67,7 +76,7 @@ class Markov(commands.Cog):
         model = train_markov_model(memory)
         if not model:
             logger.error("Failed to train markov model")
-            await ctx.send("Failed to retrain!")
+            await send_error(ctx, description="Failed to retrain!")
             return False
 
         self.model = model
@@ -77,7 +86,11 @@ class Markov(commands.Cog):
 
         await send_message(
             ctx,
-            f"Markov model retrained successfully using {data_size} data points!",
+            embed=discord.Embed(
+                title="Model Retrained",
+                description=f"Markov model retrained successfully using {data_size} data points!",
+                color=discord.Color.green(),
+            ),
             edit=True,
             edit_message_reference=processing_message_ref,
         )
@@ -85,7 +98,7 @@ class Markov(commands.Cog):
     @commands.command()
     async def talk(self, ctx: commands.Context, sentence_size: int = 5) -> None:
         if not self.model:
-            await send_message(ctx, f"{'I need to learn more from messages before I can talk.'}")
+            await send_info(ctx, title="Not Enough Data", description="I need to learn more from messages before I can talk.")
             return
 
         response: str = ""
@@ -113,5 +126,5 @@ class Markov(commands.Cog):
         await send_message(ctx, coherent_response)
 
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(Markov(bot))

@@ -6,15 +6,11 @@ from modules.sentenceprocessing import send_message
 from modules.settings import instance as settings_manager
 import requests
 import psutil
-import cpuinfo
 import sys
-import platform
 import logging
 from modules.sync_connector import instance as synchub
 
 settings = settings_manager.settings
-
-OS_STRING = f"{platform.system() if platform.system() != 'Darwin' else 'macOS'} {platform.release() if platform.system() != 'Darwin' else platform.mac_ver()[0]}"
 
 logger = logging.getLogger("goober")
 
@@ -84,7 +80,7 @@ class BaseCommands(commands.Cog):
             color=discord.Colour(0x000000),
         )
         embed.set_footer(
-            text=f"{'Requested by'} {ctx.author.name}",
+            text=f"Requested by {ctx.author.name}",
             icon_url=ctx.author.display_avatar.url,
         )
 
@@ -96,11 +92,6 @@ class BaseCommands(commands.Cog):
             title='About me',
             description="",
             color=discord.Colour(0x000000),
-        )
-
-        embed.add_field(
-            name='System information',
-            value=f'OS: {OS_STRING}'
         )
 
         embed.add_field(
@@ -118,52 +109,42 @@ class BaseCommands(commands.Cog):
         memory_file: str = settings.bot.active_memory
         file_size: int = os.path.getsize(memory_file)
 
-        memory_info = psutil.virtual_memory()
-        total_memory = memory_info.total / (1024**3)
-        used_memory = memory_info.used / (1024**3)
-
-        cpu_name = cpuinfo.get_cpu_info()["brand_raw"]
-
         with open(memory_file, "r") as file:
             line_count: int = sum(1 for _ in file)
 
         embed: discord.Embed = discord.Embed(
-            title=f"{'Bot stats'}",
+            title="Bot stats",
             description="Data about the the bot's memory.",
             color=discord.Colour(0x000000),
         )
         embed.add_field(
-            name=f"{'File Stats'}",
-            value=f"{'Size: {file_size} bytes\nLines: {line_count}'.format(file_size=file_size, line_count=line_count)}",
+            name="File Stats",
+            value=f"Size: {file_size} bytes\nLines: {line_count}",
             inline=False,
         )
 
         mem_used_by_process = psutil.Process().memory_info().rss / 1024 ** 2
 
-        embed.add_field(name="Instance", value=f"Memory usage: {round(mem_used_by_process)}mb")
-
-        embed.add_field(
-            name='System information',
-            value="\n".join([
-                f"Memory Usage: {round(used_memory)} GB / {round(total_memory, 2)} GB ({round((used_memory / total_memory) * 100)}%)",
-                f"CPU: {cpu_name}"
-            ])
-        )
+        embed.add_field(name="Memory Usage", value=f"This bot is using {round(mem_used_by_process)} MB")
 
         embed.add_field(
             name="Sync hub",
-            value=f"Connected: {synchub.connected}, URL: {synchub.url}",
+            value=f"Connected: {synchub.connected} (URL: `{synchub.url}`)",
             inline=False,
         )
 
         embed.add_field(
-            name="Variable Info",
-            value=f"""{"Name: {NAME} \nPrefix: {PREFIX} \nOwner ID: {ownerid}\nPing line: {PING_LINE} \nMemory Sharing Enabled: {showmemenabled} \nUser Training Enabled: {USERTRAIN_ENABLED}\nSong: {song}".format(  # noqa: E501 somehow this is longer than 200 chars
-                NAME=settings.name, PREFIX=settings.bot.prefix, ownerid=settings.bot.owner_ids[0],
-                PING_LINE=settings.bot.misc.ping_line, showmemenabled=settings.bot.allow_show_mem_command,
-                USERTRAIN_ENABLED=settings.bot.user_training, song=settings.bot.misc.activity.content
-            )}""",
-            inline=False,
+            name="Settings Overview",
+            value="\n".join(f"**{itm.split(": ")[0]}**: {itm.split(": ")[1]}" for itm in [
+                f"Name: {settings.name}",
+                f"Prefix: `{settings.bot.prefix}`",
+                f"Owners: {", ".join([f"<@{uid}>" for uid in settings.bot.owner_ids])}",
+                f"Ping line: `{settings.bot.misc.ping_line}`",
+                f"Memory sharing enabled: {settings.bot.allow_show_mem_command}",
+                f"User training enabled: {settings.bot.user_training}",
+                f"Song: {settings.bot.misc.activity.content}"
+            ]),
+            inline=False
         )
 
         await send_message(ctx, embed=embed)

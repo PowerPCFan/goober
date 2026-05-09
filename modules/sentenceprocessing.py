@@ -53,7 +53,7 @@ def is_positive(sentence):
     doc = nlp(sentence)
     sentiment_score = doc._.polarity  # from spacytextblob
 
-    debug_message = f"{'Positivity of sentence is:'} {sentiment_score}{RESET}"
+    debug_message = f"Positivity of sentence is: {sentiment_score}{RESET}"
     logger.debug(debug_message)
 
     return (sentiment_score > 0.6)
@@ -75,7 +75,7 @@ async def send_message(
             await edit_message_reference.edit(content=message, embed=embed)
             return edit_message_reference
         except Exception as e:
-            await ctx.send(f"{'Failed to edit message'} {e}")
+            await ctx.send(f"Failed to edit message: {e}")
             return None
 
     if embed:
