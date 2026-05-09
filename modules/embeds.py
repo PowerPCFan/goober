@@ -16,7 +16,8 @@ async def send_info(
     title: str,
     description: str,
     fields: list[DiscordEmbedField] = [],
-    reply: bool = False
+    reply: bool = False,
+    footer_text: str | None = None,
 ) -> discord.Message:
     ...
 
@@ -28,6 +29,7 @@ async def send_info(
     title: str,
     description: str,
     fields: list[DiscordEmbedField] = [],
+    footer_text: str | None = None,
 ) -> discord.InteractionCallbackResponse[discord.Client]:
     ...
 
@@ -39,6 +41,7 @@ async def send_info(
     description: str,
     fields: list[DiscordEmbedField] = [],
     reply: bool = False,
+    footer_text: str | None = None,
 ):
     if isinstance(ctx_or_interaction, commands.Context):
         if reply:
@@ -56,6 +59,9 @@ async def send_info(
 
     for field in fields:
         embed.add_field(**field)
+
+    if footer_text:
+        embed.set_footer(text=footer_text)
 
     return await send(embed=embed)
 
