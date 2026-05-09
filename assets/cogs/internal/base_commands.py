@@ -38,7 +38,8 @@ class BaseCommands(commands.Cog):
             "CogManager": "Cog Management",
             "PermissionManager": "Permission Management",
             "Markov": "Markov model",
-            "SongChanger": "Song Changer"
+            "SongChanger": "Song Changer",
+            "WhoAmI": "Who Am I?"
         }
 
         command_categories: dict[str, list[str]] = {}

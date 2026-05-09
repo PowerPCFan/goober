@@ -71,9 +71,6 @@ intents.members = True
 bot: commands.Bot = commands.Bot(
     command_prefix=settings.bot.prefix,
     intents=intents,
-    allowed_mentions=discord.AllowedMentions(
-        everyone=False, roles=False, users=False, replied_user=True
-    ),
     help_command=None
 )
 
@@ -164,6 +161,9 @@ async def on_ready() -> None:
 
 @bot.event
 async def on_command_error(ctx: commands.Context, error: commands.CommandError) -> None:
+    if isinstance(error, commands.CheckFailure):
+        # should be handled by permission denied message
+        return
     if isinstance(error, commands.CommandInvokeError):
         original: Exception = error.original
         await handle_exception_with_context(

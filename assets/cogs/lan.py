@@ -44,9 +44,15 @@ class IPAddress(str):
             return None
 
 
+class FavoriteEntry(TypedDict):
+    name: str
+    target: str
+
+
 class LanCache(TypedDict):
     ips: dict[str, dict[str, str]]
     aliases: dict[str, str]
+    favorites: list[FavoriteEntry]
 
 
 class LAN(commands.Cog):
@@ -68,6 +74,7 @@ class LAN(commands.Cog):
         cache: LanCache = {
             "ips": {},
             "aliases": {},
+            "favorites": [],
         }
 
         try:
@@ -87,6 +94,19 @@ class LAN(commands.Cog):
                         if not isinstance(alias, str) or not isinstance(ip_value, str):
                             continue
                         cache["aliases"][alias] = ip_value
+
+                loaded_favorites = loaded.get("favorites", [])
+                if isinstance(loaded_favorites, list):
+                    for entry in loaded_favorites:
+                        if not isinstance(entry, dict):
+                            continue
+                        name = entry.get("name")
+                        target = entry.get("target")
+                        if isinstance(name, str) and isinstance(target, str):
+                            cache["favorites"].append({
+                                "name": name,
+                                "target": target,
+                            })
         except FileNotFoundError:
             return cache
         except Exception:
@@ -131,9 +151,23 @@ class LAN(commands.Cog):
         if resolved and IPAddress(resolved):
             return resolved
 
+        for entry in cache["favorites"]:
+            if entry.get("name", "").lower() == target.lower():
+                favorite_target = entry.get("target")
+                if favorite_target and IPAddress(favorite_target):
+                    return favorite_target
+
         ip_addr = IPAddress(target)
         if ip_addr:
             return str(ip_addr)
+
+        return None
+
+    def _normalize_target(self, cache: LanCache, target: str) -> str | None:
+        resolved = self._resolve_target(cache, target)
+
+        if resolved:
+            return resolved
 
         return None
 
@@ -379,7 +413,7 @@ class LAN(commands.Cog):
             await send_warning(ctx, title="No Cached Info", description=f"No cached info found for `{ip_key}`.")
 
     @requires_admin()
-    @commands.command(name="lan_setalias", description="Set an alias for a LAN IP")
+    @commands.command(name="lan_addalias", description="Set an alias for a LAN IP")
     async def lan_alias_set(self, ctx: commands.Context, alias: str, ip: str) -> None:
         ip_addr: IPAddress | None = IPAddress(ip)
         if not ip_addr:
@@ -432,6 +466,180 @@ class LAN(commands.Cog):
             title="Aliases",
             description="\n".join([f"- `{alias}`: `{ip}`" for alias, ip in sorted(alias_map.items())])
         )
+
+    @requires_admin()
+    @commands.command(name="lan_addfav", description="Add a LAN favorite")
+    async def lan_fav_add(self, ctx: commands.Context, target: str, *, name: str) -> None:
+        cache = self._load_cache()
+        display_name = name.strip()
+        if not display_name:
+            await send_error(ctx, description="Favorite name cannot be empty.")
+            return
+
+        resolved = self._normalize_target(cache, target)
+
+        if not resolved:
+            await send_error(
+                ctx,
+                description=f"Unknown target `{target}`. Use an IP or add an alias."
+            )
+            return
+
+        favorites = cache.get("favorites", [])
+        normalized = display_name.lower()
+
+        existing = next((entry for entry in favorites if entry.get("name", "").lower() == normalized), None)
+        if existing:
+            existing_name = existing.get("name", normalized)
+            await send_warning(
+                ctx,
+                title="Already Favorited",
+                description=f"`{existing_name}` already exists."
+            )
+            return
+
+        favorites.append({
+            "name": display_name,
+            "target": resolved,
+        })
+        cache["favorites"] = favorites
+        self._save_cache(cache)
+
+        await send_success(ctx, description=f"Added `{display_name}` -> `{resolved}` to favorites.")
+
+    @requires_admin()
+    @commands.command(name="lan_rmfav", description="Remove a LAN favorite")
+    async def lan_fav_remove(self, ctx: commands.Context, *, target: str) -> None:
+        cache = self._load_cache()
+        favorites = cache.get("favorites", [])
+        normalized = target.lower()
+
+        for idx, entry in enumerate(favorites):
+            if entry.get("name", "").lower() == normalized:
+                display_name = entry.get("name", normalized)
+                favorites.pop(idx)
+                cache["favorites"] = favorites
+                self._save_cache(cache)
+                await send_success(ctx, description=f"Removed `{display_name}` from favorites.")
+                return
+
+        resolved = self._normalize_target(cache, target)
+        if resolved:
+            to_remove = [entry for entry in favorites if entry.get("target") == resolved]
+            if to_remove:
+                removed_names = [entry.get("name", "unknown") for entry in to_remove]
+                remaining = [entry for entry in favorites if entry.get("target") != resolved]
+                cache["favorites"] = remaining
+                self._save_cache(cache)
+                await send_success(
+                    ctx,
+                    description=f"Removed favorites for `{resolved}`: {', '.join(removed_names)}",
+                )
+                return
+
+        await send_warning(ctx, title="Not Found", description=f"`{target}` is not a favorite.")
+
+    @requires_admin()
+    @commands.command(name="lan_lsfav", description="List LAN favorites")
+    async def lan_fav_list(self, ctx: commands.Context) -> None:
+        cache = self._load_cache()
+        favorites = cache.get("favorites", [])
+
+        if not favorites:
+            await send_warning(ctx, title="No Favorites", description="No favorites found.")
+            return
+
+        await send_info(
+            ctx,
+            title="Favorites",
+            description="\n".join([
+                f"- `{entry.get('name', 'unknown')}`: `{entry.get('target', 'unknown')}`"
+                for entry in sorted(favorites, key=lambda item: item.get("name", ""))
+            ])
+        )
+
+    @requires_admin()
+    @commands.command(name="lan_health", description="Show status for favorited LAN devices")
+    async def lan_health(self, ctx: commands.Context, ping_count: int = 1) -> None:
+        if ping_count < 1 or ping_count > 10:
+            await send_error(ctx, description="Ping count must be between 1 and 10.")
+            return
+
+        cache = self._load_cache()
+        favorites = cache.get("favorites", [])
+
+        if not favorites:
+            await send_warning(
+                ctx,
+                title="No Favorites",
+                description="No favorites found."
+            )
+            return
+
+        loader = "<a:loader:1502454894085541972>"
+        lines: list[str] = []
+        targets: list[tuple[str, str]] = []
+
+        for entry in favorites:
+            display_name = entry.get("name", "unknown")
+            target = entry.get("target", "")
+            targets.append((display_name, target))
+            lines.append(f"- **{display_name}** (`{target}`): {loader} Checking...")
+
+        embed = discord.Embed(title="LAN Health", color=discord.Color.dark_grey())
+        embed.description = "\n".join(lines)
+        message = await ctx.send(embed=embed)
+
+        do_progress = ping_count != 1
+        pending_updates = 0
+        successes = 0
+        failures = 0
+        for index, (display_name, target) in enumerate(targets):
+            resolved = self._normalize_target(cache, target) or target
+            ip_addr = IPAddress(resolved)
+
+            if not ip_addr:
+                lines[index] = f"- **{display_name}** (`{resolved}`): :warning: Invalid IP"
+                failures += 1
+            else:
+                host = self._ping_device(ip_addr, ping_count=ping_count)
+                if host and host.is_alive:
+                    lines[index] = f"- **{display_name}** (`{resolved}`): :white_check_mark: Online (`{host.avg_rtt}ms`)"
+                    successes += 1
+                else:
+                    lines[index] = f"- **{display_name}** (`{resolved}`): :x: Offline"
+                    failures += 1
+
+            if do_progress:
+                pending_updates += 1
+                if pending_updates >= 3:
+                    embed.description = "\n".join(lines)
+                    await message.edit(embed=embed)
+                    pending_updates = 0
+
+        if successes == 0:
+            embed.color = discord.Color.red()
+        elif failures == 0:
+            embed.color = discord.Color.green()
+        else:
+            embed.color = discord.Color.orange()
+
+        embed.description = "\n".join(lines)
+        await message.edit(embed=embed)
+
+    @requires_admin()
+    @commands.command(name="lan_publicip", description="Show the public IP for the bot's network")
+    async def lan_publicip(self, ctx: commands.Context) -> None:
+        try:
+            response = requests.get("https://myip.wtf/text", timeout=5)
+            response.raise_for_status()
+            ip_text = response.text.strip()
+        except Exception:
+            logger.exception("Failed to fetch public IP")
+            await send_error(ctx, description="Failed to fetch public IP.")
+            return
+
+        await send_info(ctx, title="Public IP", description=f"`{ip_text}`")
 
 
 async def setup(bot: commands.Bot):
