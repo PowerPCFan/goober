@@ -1,6 +1,7 @@
 import math
 import pathlib
 import random
+from discord.app_commands import guild_install, user_install
 from discord.ext import commands
 import discord
 import asyncio
@@ -46,7 +47,9 @@ class Eightball(commands.Cog):
             "Very doubtful."
         ]
 
-    @commands.command()
+    @user_install()
+    @guild_install()
+    @commands.hybrid_command()
     async def eightball(self, ctx: commands.Context, *, question: str = ""):
         # Send initial message
         msg1_embed = discord.Embed(

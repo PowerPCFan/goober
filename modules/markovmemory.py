@@ -1,4 +1,3 @@
-import os
 import json
 import markovify
 import pickle
@@ -13,22 +12,9 @@ model: markovify.NewlineText | None = None
 logger = logging.getLogger("goober")
 
 
-# Get file size and line count for a given file path
-def get_file_info(file_path):
-    try:
-        file_size = os.path.getsize(file_path)
-        with open(file_path, "r") as f:
-            lines = f.readlines()
-        return {"file_size_bytes": file_size, "line_count": len(lines)}
-    except Exception as e:
-        return {"error": str(e)}
-
-
-# Load memory data from file, or use default dataset if not loaded yet
 def load_memory():
     data = []
 
-    # Try to load data from MEMORY_FILE
     try:
         with open(settings.bot.active_memory, "r") as f:
             data = json.load(f)
@@ -40,7 +26,6 @@ def load_memory():
     return data
 
 
-# Save memory data to MEMORY_FILE
 def save_memory(memory):
     with open(settings.bot.active_memory, "w") as f:
         json.dump(memory, f, indent=4)
@@ -64,7 +49,6 @@ def train_markov_model(memory, additional_data=None) -> markovify.NewlineText | 
     return model
 
 
-# Save the Markov model to a pickle file
 def save_markov_model(model):
     filename = settings.bot.active_model
 
@@ -73,7 +57,6 @@ def save_markov_model(model):
     logger.info(f"Markov model saved to {filename}.")
 
 
-# Load the Markov model from a pickle file
 def load_markov_model():
     global model
     filename = settings.bot.active_model

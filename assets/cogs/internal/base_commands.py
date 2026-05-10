@@ -1,12 +1,12 @@
 import os
 import discord
 from discord.ext import commands
+from modules.embeds import send_error
 from modules.permission import requires_admin
 from modules.sentenceprocessing import send_message
 from modules.settings import instance as settings_manager
-import requests
+import httpx
 import psutil
-import sys
 import logging
 from modules.sync_connector import instance as synchub
 
@@ -142,18 +142,6 @@ class BaseCommands(commands.Cog):
 
     @requires_admin()
     @commands.command()
-    async def restart(self, ctx: commands.Context):
-        await ctx.send("Restarting...")
-        os.execv(sys.executable, [sys.executable] + sys.argv)
-
-    @requires_admin()
-    @commands.command()
-    async def force_update(self, ctx: commands.Context):
-        await ctx.send("Forcefully updating...")
-        os.execv(sys.executable, [sys.executable] + sys.argv)
-
-    @requires_admin()
-    @commands.command()
     async def mem(self, ctx: commands.Context) -> None:
         if not settings.bot.allow_show_mem_command:
             return
@@ -161,18 +149,19 @@ class BaseCommands(commands.Cog):
         with open(settings.bot.active_memory, "rb") as f:
             data: bytes = f.read()
 
-        response = requests.post(
-            "https://litterbox.catbox.moe/resources/internals/api.php",
-            data={"reqtype": "fileupload", "time": "1h"},
-            files={"fileToUpload": data},
-        )
+        if len(data) > (10 * 1024 * 1024):
+            async with httpx.AsyncClient() as c:
+                response = await c.post(
+                    "https://litterbox.catbox.moe/resources/internals/api.php",
+                    data={"reqtype": "fileupload", "time": "1h"},
+                    files={"fileToUpload": data},
+                )
 
-        if response.status_code != 200:
-            with open(settings.bot.active_memory, "rb") as f:
-                await send_message(ctx, file=discord.File(f))
-                return
-
-        await send_message(ctx, response.text)
+            if response.status_code != 200:
+                await send_error(ctx, description="Failed to upload memory file to catbox.moe. Try again later.")
+        else:
+            await ctx.send(file=discord.File(data))
+            return
 
 
 async def setup(bot: commands.Bot):

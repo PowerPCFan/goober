@@ -1,9 +1,11 @@
-import os
 import random
 import re
+import logging
+import json
+import time
+import markovify
 import discord
 from discord.ext import commands
-
 from modules.embeds import send_error, send_info
 from modules.markovmemory import (
     load_markov_model,
@@ -17,10 +19,6 @@ from modules.sentenceprocessing import (
     rephrase_for_coherence,
     send_message,
 )
-import logging
-import json
-import time
-import markovify
 from modules.settings import instance as settings_manager
 
 logger = logging.getLogger("goober")
@@ -122,9 +120,8 @@ class Markov(commands.Cog):
         if random.random() < 0.9 and is_positive(coherent_response):
             gif_url: str = random.choice(settings.bot.misc.positive_gifs)
 
-            coherent_response = f"{coherent_response}\n[jif]({gif_url})"
+            coherent_response = f"{coherent_response}\n[gif]({gif_url})"
 
-        os.environ["gooberlatestgen"] = coherent_response
         await send_message(ctx, coherent_response)
 
 

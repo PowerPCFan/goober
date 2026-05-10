@@ -60,13 +60,10 @@ class MessageMetadata(TypedDict):
     timestamp: float
 
 
-os.makedirs("data", exist_ok=True)
+data_dir = Path(__file__).parent / "data"
+data_dir.mkdir(exist_ok=True)
 
-# Constants with type hints
-positive_gifs: list[str] = settings.bot.misc.positive_gifs
-currenthash: str = ""
 launched: bool = False
-slash_commands_enabled: bool = False
 
 # Set up Discord bot intents and create bot instance
 intents: discord.Intents = discord.Intents.default()
@@ -252,10 +249,14 @@ async def on_message(message: discord.Message) -> None:
         return
 
 
-# Event: Called on every interaction (slash command, etc.)
 @bot.event
 async def on_interaction(interaction: discord.Interaction) -> None:
-    logger.info(f"{f'Info: {interaction.user} ran '} {interaction.user.name}")
+    logger.info(f"Info: {"[USER INTERACTION] " if interaction.is_user_integration() else ''}@{interaction.user.name} ran '{interaction.command.name if interaction.command else 'unknown command'}' in #{interaction.channel.name if interaction.channel and not isinstance(interaction.channel, discord.DMChannel) else ("DM" if isinstance(interaction.channel, discord.DMChannel) else 'Unknown Channel')} ({interaction.guild.name if interaction.guild else 'Unknown Guild / DM'})")  # noqa: E501
+
+
+@bot.event
+async def on_command(ctx: commands.Context) -> None:
+    logger.info(f"Info: @{ctx.author.name} ran '{ctx.command.name if ctx.command else 'unknown command'}' in #{ctx.channel.name if ctx.channel and not isinstance(ctx.channel, discord.DMChannel) else ("DM" if isinstance(ctx.channel, discord.DMChannel) else 'Unknown Channel')} ({ctx.guild.name if ctx.guild else 'Unknown Guild / DM'})")  # noqa: E501
 
 
 # Global check: Block blacklisted users from running commands
@@ -287,4 +288,4 @@ def improve_sentence_coherence(sentence: str) -> str:
 
 # Start the bot
 if __name__ == "__main__":
-    bot.run(os.environ.get("DISCORD_BOT_TOKEN", ""))
+    bot.run(os.getenv("DISCORD_BOT_TOKEN", ""))
