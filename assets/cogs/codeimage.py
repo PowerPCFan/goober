@@ -1,4 +1,3 @@
-import asyncio
 import html
 import io
 import logging
@@ -85,19 +84,26 @@ class CodeImage(commands.Cog):
             # ignore bots
             return
 
+        logger.debug(f"Checking message {message.id} for codeblocks...")
+
         matches: list[re.Match[str]] = list(self.pattern.finditer(message.content))
 
         if not matches:
-            # no codeblock found
+            logger.debug("No codeblocks found.")
             return
+
+        logger.info(f"Found codeblock in message {message.id}.")
 
         lang: str | None = matches[0].group(1).strip().lower() if matches[0].group(1) else None
         code: str = matches[0].group(2).strip()
 
         if not code:
+            logger.debug("Codeblock is empty, skipping...")
             return
 
         language: HighlightJSLanguage | None = self.get_language(lang) if lang else None
+
+        logger.debug(f"Language extracted: {lang} -> {language.name if language else 'unknown/auto-detect'}")  # noqa: E501
 
         if language:
             codeblock_html = f'<code class="{language.value}">{html.escape(code)}</code>'
@@ -114,6 +120,7 @@ class CodeImage(commands.Cog):
         )
 
         try:
+            logger.info(f"Generating code image (language: {language.name if language else 'auto-detect'})")  # noqa: E501
             image_bytes = await self.generate_code_image(codeblock_html)
             file = discord.File(io.BytesIO(image_bytes), filename="code_image.png")
 
@@ -140,7 +147,7 @@ class CodeImage(commands.Cog):
             page = await browser.new_page()
 
             await page.set_content(html_content)
-            await page.wait_for_function("typeof hljs !== 'undefined'", timeout=5)
+            await page.wait_for_function("typeof hljs !== 'undefined'", timeout=5000)
 
             dimensions = await page.evaluate("""
                 () => {

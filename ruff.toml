@@ -37,8 +37,8 @@ ignore = [
     "INP001",     # Checks for missing __init__.py
     "D",          # Docstring stuff
     "BLE",        # Blind `except Exception` - i should probably get used to not doing this lol
-    "T201","T203" # Alerts when you use `print` statements
-
+    "T201","T203",# Alerts when you use `print` statements
+    "G004"        # Alerts when you use an F-string in a logger call
 ]
 
 fixable = ["ALL"]
