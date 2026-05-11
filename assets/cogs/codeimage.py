@@ -138,10 +138,9 @@ class CodeImage(commands.Cog):
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
-            await page.set_content(html_content)
 
-            await page.wait_for_function("typeof hljs !== 'undefined'")
-            await asyncio.sleep(0.5)
+            await page.set_content(html_content)
+            await page.wait_for_function("typeof hljs !== 'undefined'", timeout=5)
 
             dimensions = await page.evaluate("""
                 () => {
