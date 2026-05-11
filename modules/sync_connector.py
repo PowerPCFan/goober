@@ -1,8 +1,9 @@
-import websocket
-from modules.settings import instance as settings_manager
 import logging
 import threading
 
+import websocket
+
+from modules.settings import instance as settings_manager
 
 logger = logging.getLogger("goober")
 settings = settings_manager.settings
@@ -122,7 +123,9 @@ class SyncConnector:
                 return False
 
         try:
-            self.client.send(f"event={event};ref={message_id};channel={channel_id};name={settings.name}")
+            self.client.send(
+                f"event={event};ref={message_id};channel={channel_id};name={settings.name}"
+            )
             return self.client.recv() == "unhandled"
         except Exception as e:
             logger.debug(e)

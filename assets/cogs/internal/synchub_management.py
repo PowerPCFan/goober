@@ -1,8 +1,9 @@
 from discord.ext import commands
+
 from modules.permission import requires_admin
 from modules.sentenceprocessing import send_message
-from modules.sync_connector import instance as synchub
 from modules.settings import instance as settings_manager
+from modules.sync_connector import instance as synchub
 
 settings = settings_manager.settings
 
@@ -14,15 +15,15 @@ class SyncHubManagement(commands.Cog):
         self.description = "📨|Commands for managing Goober Sync Hub"
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Test sync hub message reaction permissions")
     async def synchub_test(self, ctx: commands.Context, message_id: str | None) -> None:
         message_id = message_id or "0"
         status = synchub.can_react(int(message_id), 0)
 
-        await send_message(ctx, f"Allowed to react to message {message_id}? {'yes' if status else 'no'} (connection to {settings.bot.sync_hub.url} active? {'yes' if synchub.connected else 'no'})")
+        await send_message(ctx, f"Allowed to react to message {message_id}? {'yes' if status else 'no'} (connection to {settings.bot.sync_hub.url} active? {'yes' if synchub.connected else 'no'})")  # noqa: E501
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Connect to the sync hub")
     async def synchub_connect(self, ctx: commands.Context) -> None:
         await send_message(ctx, "Trying to connect...")
 
@@ -33,7 +34,7 @@ class SyncHubManagement(commands.Cog):
             await send_message(ctx, "Failed to connect to sync hub")
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="View sync hub connection statistics")
     async def synchub_stats(self, ctx: commands.Context) -> None:
         connected = synchub.get_connected()
         await ctx.send(connected)

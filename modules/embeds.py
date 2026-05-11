@@ -1,6 +1,7 @@
+from typing import TypedDict, overload
+
 import discord
 from discord.ext import commands
-from typing import TypedDict, overload
 
 
 class DiscordEmbedField(TypedDict):
@@ -15,8 +16,7 @@ async def send_info(
     *,
     title: str,
     description: str,
-    fields: list[DiscordEmbedField] = [],
-    reply: bool = False,
+    fields: list[DiscordEmbedField] | None = None,
     footer_text: str | None = None,
 ) -> discord.Message:
     ...
@@ -28,7 +28,7 @@ async def send_info(
     *,
     title: str,
     description: str,
-    fields: list[DiscordEmbedField] = [],
+    fields: list[DiscordEmbedField] | None = None,
     footer_text: str | None = None,
 ) -> discord.InteractionCallbackResponse[discord.Client]:
     ...
@@ -39,15 +39,11 @@ async def send_info(
     *,
     title: str,
     description: str,
-    fields: list[DiscordEmbedField] = [],
-    reply: bool = False,
+    fields: list[DiscordEmbedField] | None = None,
     footer_text: str | None = None,
 ):
     if isinstance(ctx_or_interaction, commands.Context):
-        if reply:
-            send = ctx_or_interaction.message.reply
-        else:
-            send = ctx_or_interaction.send
+        send = ctx_or_interaction.send
     else:
         send = ctx_or_interaction.response.send_message
 
@@ -57,8 +53,9 @@ async def send_info(
         color=discord.Color.blue()
     )
 
-    for field in fields:
-        embed.add_field(**field)
+    if fields:
+        for field in fields:
+            embed.add_field(**field)
 
     if footer_text:
         embed.set_footer(text=footer_text)
@@ -71,9 +68,8 @@ async def send_success(
     ctx_or_interaction: commands.Context,
     *,
     description: str,
-    fields: list[DiscordEmbedField] = [],
-    title: str = "Success",
-    reply: bool = False
+    fields: list[DiscordEmbedField] | None = None,
+    title: str = "Success"
 ) -> discord.Message:
     ...
 
@@ -83,7 +79,7 @@ async def send_success(
     ctx_or_interaction: discord.Interaction,
     *,
     description: str,
-    fields: list[DiscordEmbedField] = [],
+    fields: list[DiscordEmbedField] | None = None,
     title: str = "Success"
 ) -> discord.InteractionCallbackResponse[discord.Client]:
     ...
@@ -93,15 +89,11 @@ async def send_success(
     ctx_or_interaction: commands.Context | discord.Interaction,
     *,
     description: str,
-    fields: list[DiscordEmbedField] = [],
+    fields: list[DiscordEmbedField] | None = None,
     title: str = "Success",
-    reply: bool = False
 ):
     if isinstance(ctx_or_interaction, commands.Context):
-        if reply:
-            send = ctx_or_interaction.message.reply
-        else:
-            send = ctx_or_interaction.send
+        send = ctx_or_interaction.send
     else:
         send = ctx_or_interaction.response.send_message
 
@@ -111,8 +103,9 @@ async def send_success(
         color=discord.Color.green()
     )
 
-    for field in fields:
-        embed.add_field(**field)
+    if fields:
+        for field in fields:
+            embed.add_field(**field)
 
     return await send(embed=embed)
 
@@ -122,9 +115,8 @@ async def send_warning(
     ctx_or_interaction: commands.Context,
     *,
     description: str,
-    fields: list[DiscordEmbedField] = [],
-    title: str = "Warning",
-    reply: bool = False
+    fields: list[DiscordEmbedField] | None = None,
+    title: str = "Warning"
 ) -> discord.Message:
     ...
 
@@ -134,8 +126,8 @@ async def send_warning(
     ctx_or_interaction: discord.Interaction,
     *,
     description: str,
-    fields: list[DiscordEmbedField] = [],
-    title: str = "Warning",
+    fields: list[DiscordEmbedField] | None = None,
+    title: str = "Warning"
 ) -> discord.InteractionCallbackResponse[discord.Client]:
     ...
 
@@ -144,15 +136,11 @@ async def send_warning(
     ctx_or_interaction: commands.Context | discord.Interaction,
     *,
     description: str,
-    fields: list[DiscordEmbedField] = [],
-    title: str = "Warning",
-    reply: bool = False,
+    fields: list[DiscordEmbedField] | None = None,
+    title: str = "Warning"
 ):
     if isinstance(ctx_or_interaction, commands.Context):
-        if reply:
-            send = ctx_or_interaction.message.reply
-        else:
-            send = ctx_or_interaction.send
+        send = ctx_or_interaction.send
     else:
         send = ctx_or_interaction.response.send_message
 
@@ -162,8 +150,9 @@ async def send_warning(
         color=discord.Color.orange()
     )
 
-    for field in fields:
-        embed.add_field(**field)
+    if fields:
+        for field in fields:
+            embed.add_field(**field)
 
     return await send(embed=embed)
 
@@ -173,9 +162,8 @@ async def send_error(
     ctx_or_interaction: commands.Context,
     *,
     description: str,
-    fields: list[DiscordEmbedField] = [],
-    title: str = "Error",
-    reply: bool = False
+    fields: list[DiscordEmbedField] | None = None,
+    title: str = "Error"
 ) -> discord.Message:
     ...
 
@@ -185,7 +173,7 @@ async def send_error(
     ctx_or_interaction: discord.Interaction,
     *,
     description: str,
-    fields: list[DiscordEmbedField] = [],
+    fields: list[DiscordEmbedField] | None = None,
     title: str = "Error",
 ) -> discord.InteractionCallbackResponse[discord.Client]:
     ...
@@ -195,15 +183,11 @@ async def send_error(
     ctx_or_interaction: commands.Context | discord.Interaction,
     *,
     description: str,
-    fields: list[DiscordEmbedField] = [],
-    title: str = "Error",
-    reply: bool = False,
+    fields: list[DiscordEmbedField] | None = None,
+    title: str = "Error"
 ):
     if isinstance(ctx_or_interaction, commands.Context):
-        if reply:
-            send = ctx_or_interaction.message.reply
-        else:
-            send = ctx_or_interaction.send
+        send = ctx_or_interaction.send
     else:
         send = ctx_or_interaction.response.send_message
 
@@ -213,7 +197,8 @@ async def send_error(
         color=discord.Color.red()
     )
 
-    for field in fields:
-        embed.add_field(**field)
+    if fields:
+        for field in fields:
+            embed.add_field(**field)
 
     return await send(embed=embed)

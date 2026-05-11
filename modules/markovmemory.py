@@ -1,7 +1,9 @@
 import json
-import markovify
-import pickle
 import logging
+import pickle
+
+import markovify
+
 from modules.globalvars import RESET
 from modules.settings import instance as settings_manager
 
@@ -37,9 +39,7 @@ def train_markov_model(memory, additional_data=None) -> markovify.NewlineText | 
 
     filtered_memory = [line for line in memory if isinstance(line, str)]
     if additional_data:
-        filtered_memory.extend(
-            line for line in additional_data if isinstance(line, str)
-        )
+        filtered_memory.extend(line for line in additional_data if isinstance(line, str))
 
     if not filtered_memory:
         return None

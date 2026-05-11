@@ -1,15 +1,20 @@
+# fmt: off
+# ruff: noqa: E501
+
+import logging
+import random
+import re
+from collections.abc import Callable, Iterator
+from copy import copy
+from typing import Any, TypedDict
+
 import discord
 from discord.ext import commands
-import re
-from typing import TypedDict, Any, Callable, Iterator
-from modules.settings import instance as settings_manager
+
 from modules.permission import requires_admin
 from modules.sentenceprocessing import send_message
+from modules.settings import instance as settings_manager
 from modules.sync_connector import instance as synchub
-import random
-from copy import copy
-import logging
-
 
 logger = logging.getLogger("goober")
 settings = settings_manager.settings
@@ -403,7 +408,7 @@ class Converter(commands.Cog):
             await message.reply(self.__format_response(sorted_units))
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Blacklist a word from automatic conversion")
     async def blacklist_word(self, ctx: commands.Context, word: str | None) -> None:
         settings: SettingsType = settings_manager.get_plugin_settings("converter", default_settings)  # type: ignore[assignment]
 
@@ -421,7 +426,7 @@ class Converter(commands.Cog):
         await send_message(ctx, f"Blacklisted {word}!")
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Whitelist a blacklisted word for automatic conversion")
     async def whitelist_word(self, ctx: commands.Context, word: str | None) -> None:
         settings: SettingsType = settings_manager.get_plugin_settings("converter", default_settings)  # type: ignore[assignment]
 

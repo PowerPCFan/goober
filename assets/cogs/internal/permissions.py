@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+
 from modules.permission import requires_admin
 from modules.settings import instance as settings_manager
 
@@ -13,7 +14,7 @@ class PermissionManager(commands.Cog):
         self.description = "🔐 | Commands for managing bot permissions"
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Add a user as a bot owner")
     async def add_owner(self, ctx: commands.Context, member: discord.Member):
         settings.bot.owner_ids.append(member.id)
         settings_manager.add_admin_log_event(
@@ -37,7 +38,7 @@ class PermissionManager(commands.Cog):
         await ctx.send(embed=embed)
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Remove a user from bot owner privileges")
     async def remove_owner(self, ctx: commands.Context, member: discord.Member):
         try:
             settings.bot.owner_ids.remove(member.id)
@@ -64,7 +65,7 @@ class PermissionManager(commands.Cog):
         await ctx.send(embed=embed)
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Blacklist a user from using the bot")
     async def blacklist_user(self, ctx: commands.Context, member: discord.Member):
         settings.bot.blacklisted_users.append(member.id)
         settings_manager.add_admin_log_event(
@@ -87,7 +88,7 @@ class PermissionManager(commands.Cog):
         await ctx.send(embed=embed)
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Unblacklist a user to allow them to use the bot")
     async def unblacklist_user(self, ctx: commands.Context, member: discord.Member):
         try:
             settings.bot.blacklisted_users.remove(member.id)

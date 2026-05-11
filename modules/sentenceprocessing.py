@@ -1,10 +1,12 @@
+import logging
 import re
+import threading
+
 import discord
 import discord.ext.commands
-import threading
-import logging
 import spacy
 from spacy.tokens import Doc
+
 from modules.globalvars import RESET
 
 logger = logging.getLogger("goober")
@@ -17,7 +19,7 @@ def check_resources():
     try:
         nlp = spacy.load("en_core_web_sm")
     except OSError:
-        logging.critical('The spaCy model was not found! Downloading it....`')
+        logging.critical("The spaCy model was not found! Downloading it....`")
         spacy.cli.download("en_core_web_sm")  # type: ignore
         nlp = spacy.load("en_core_web_sm")
     try:
@@ -56,7 +58,7 @@ def is_positive(sentence):
     debug_message = f"Positivity of sentence is: {sentiment_score}{RESET}"
     logger.debug(debug_message)
 
-    return (sentiment_score > 0.6)
+    return sentiment_score > 0.6
 
 
 async def send_message(

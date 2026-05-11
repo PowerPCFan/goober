@@ -2,30 +2,31 @@
 # Me: Core functionality of commands
 # AI (GPT-5.2-Codex): Caching system (based on my pseudocode), other minor features / bug fixes
 
-import icmplib
-import ipaddress
-import discord
-from discord.ext import commands
-import logging
-import socket
-import httpx
 import asyncio
 import io
+import ipaddress
 import json
+import logging
 import pathlib
-import time
 import re as regexp
+import socket
+import time
 from typing import TypedDict
+
+import discord
+import httpx
+import icmplib
+from discord.ext import commands
+
 from modules.embeds import send_error, send_info, send_success, send_warning
 from modules.permission import requires_admin
-
 
 logger = logging.getLogger("goober")
 cache_footer = "Cached data: run ?!lan_rmcache <ip|mac> or ?!lan_rmcache to clear all."
 
 
 class IPAddress(str):
-    def __new__(cls, value: str) -> 'IPAddress':
+    def __new__(cls, value: str) -> "IPAddress":
         try:
             if icmplib.is_ipv6_address(value):
                 raise ValueError("IPv6 addresses are not supported yet.")
@@ -48,19 +49,19 @@ class IPAddress(str):
             raise Exception("Error creating IPAddress") from e
 
     @classmethod
-    def parse(cls, value: str) -> 'IPAddress | None':
+    def parse(cls, value: str) -> "IPAddress | None":
         try:
             return cls(value)
         except Exception:
             return None
 
 
-type IPKey = str
-type IPEntries = dict[IPKey, 'IPEntry']
-type FavoriteEntries = list['FavoriteEntry']
-type Aliases = dict[str, str]
-type MACKey = str
-type MACVendorEntries = dict[MACKey, 'MACVendorEntry']
+IPKey = str
+IPEntries = dict[IPKey, "IPEntry"]
+FavoriteEntries = list["FavoriteEntry"]
+Aliases = dict[str, str]
+MACKey = str
+MACVendorEntries = dict[MACKey, "MACVendorEntry"]
 
 
 class FavoriteEntry(TypedDict):
@@ -93,7 +94,9 @@ class LAN(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.description = "🌐 | Multi-purpose LAN cog for checking various aspects of your local network"
+        self.description = (
+            "🌐 | Multi-purpose LAN cog for checking various aspects of your local network"
+        )
         self.cache = pathlib.Path(__file__).parent.parent.parent / "data" / "lan_cache.json"
 
     def _ping_device(self, ip: IPAddress, ping_count: int = 1) -> icmplib.Host | None:
@@ -140,10 +143,12 @@ class LAN(commands.Cog):
                         name = entry.get("name")
                         target = entry.get("target")
                         if isinstance(name, str) and isinstance(target, str):
-                            cache["favorites"].append({
-                                "name": name,
-                                "target": target,
-                            })
+                            cache["favorites"].append(
+                                {
+                                    "name": name,
+                                    "target": target,
+                                }
+                            )
 
                 loaded_mac_vendors = loaded.get("mac_vendors", {})
                 if isinstance(loaded_mac_vendors, dict):
@@ -175,11 +180,15 @@ class LAN(commands.Cog):
 
     def _is_hostname_stale(self, entry: IPEntry | dict) -> bool:
         updated_at_raw = entry.get("hostname_updated_at", 0)
-        return (int(time.time()) - (updated_at_raw if isinstance(updated_at_raw, int) else 0)) > self.CACHE_TTL_SECONDS
+        return (
+            int(time.time()) - (updated_at_raw if isinstance(updated_at_raw, int) else 0)
+        ) > self.CACHE_TTL_SECONDS
 
     def _is_mac_stale(self, entry: IPEntry | dict) -> bool:
         updated_at_raw = entry.get("mac_updated_at", 0)
-        return (int(time.time()) - (updated_at_raw if isinstance(updated_at_raw, int) else 0)) > self.CACHE_TTL_SECONDS
+        return (
+            int(time.time()) - (updated_at_raw if isinstance(updated_at_raw, int) else 0)
+        ) > self.CACHE_TTL_SECONDS
 
     def _update_cache_entry(
         self,
@@ -263,8 +272,8 @@ class LAN(commands.Cog):
 
     async def _lookup_vendor(self, mac: str) -> str | None:
         try:
-            async with httpx.AsyncClient(timeout=5) as requests:
-                response = await requests.get(f"https://api.macvendors.com/{mac}")
+            async with httpx.AsyncClient(timeout=5) as client:
+                response = await client.get(f"https://api.macvendors.com/{mac}")
                 if response.status_code == 200:
                     vendor = response.text.strip()
                     return vendor if vendor else None
@@ -369,7 +378,7 @@ class LAN(commands.Cog):
         return (str(cached_entry.get("vendor")) if cached_entry else None), False
 
     @requires_admin()
-    @commands.command(name="lan", description="Show statistics for a LAN device")
+    @commands.hybrid_command(name="lan", description="Show statistics for a LAN device")
     async def lan(self, ctx: commands.Context, target: str, ping_count: int = 1):
         if ping_count < 1 or ping_count > 10:
             await send_error(ctx, description="Ping count must be between 1 and 10.")
@@ -378,12 +387,20 @@ class LAN(commands.Cog):
         cache = self._load_cache()
         resolved = self._resolve_target(cache, target)
         if not resolved:
-            await send_error(ctx, description=f"Unknown target `{target}`. Use an IP or add an alias.")
+            await send_error(
+                ctx, description=f"Unknown target `{target}`. Use an IP or add an alias."
+            )
             return
 
         ip_addr: IPAddress | None = IPAddress.parse(resolved)
         if not ip_addr:
-            await send_error(ctx, description=f"Error parsing IP address `{resolved}`. Ensure you provided a valid IPv4 address.")
+            await send_error(
+                ctx,
+                description=(
+                    f"Error parsing IP address `{resolved}`. "
+                    "Ensure you provided a valid IPv4 address."
+                ),
+            )
             return
 
         cache_dirty = False
@@ -398,10 +415,7 @@ class LAN(commands.Cog):
         vendor, updated = await self._request_vendor(cache, ip_key, mac)
         cache_dirty = cache_dirty or updated
 
-        embed = discord.Embed(
-            title="Device Stats",
-            color=discord.Colour.blurple()
-        )
+        embed = discord.Embed(title="Device Stats", color=discord.Colour.blurple())
         embed.set_footer(text=cache_footer)
 
         embed.add_field(name="🌐 IP Address", value=f"**`{ip_addr}`**")
@@ -417,17 +431,22 @@ class LAN(commands.Cog):
                 embed.add_field(name="🛜 Status", value="Online", inline=False)
                 embed.add_field(
                     name=f"{self._latency_emoji(host.avg_rtt)} Response Time",
-                    value="\n".join([
-                        f"- Min: **`{host.min_rtt}ms`**",
-                        f"- Avg: **`{host.avg_rtt}ms`**",
-                        f"- Max: **`{host.max_rtt}ms`**",
-                    ]),
+                    value="\n".join(
+                        [
+                            f"- Min: **`{host.min_rtt}ms`**",
+                            f"- Avg: **`{host.avg_rtt}ms`**",
+                            f"- Max: **`{host.max_rtt}ms`**",
+                        ]
+                    ),
                     inline=False,
                 )
 
                 embed.add_field(name="📤 Packets Sent", value=f"**{host.packets_sent}**")
                 embed.add_field(name="📥 Packets Received", value=f"**{host.packets_received}**")
-                embed.add_field(name=f"{self._packet_loss_emoji(host.packet_loss)} Packet Loss", value=f"**{round(host.packet_loss)}%**")
+                embed.add_field(
+                    name=f"{self._packet_loss_emoji(host.packet_loss)} Packet Loss",
+                    value=f"**{round(host.packet_loss)}%**",
+                )
             else:
                 embed.add_field(name="❌ Status", value="Offline")
 
@@ -436,40 +455,48 @@ class LAN(commands.Cog):
             embed.add_field(name="🏭 Vendor", value=vendor or "Unknown")
 
         if hostname or mac:
-            cache_dirty = self._update_cache_entry(
-                cache,
-                ip_key,
-                hostname=hostname or "",
-                mac=mac or "",
-            ) or cache_dirty
+            cache_dirty = (
+                self._update_cache_entry(
+                    cache,
+                    ip_key,
+                    hostname=hostname or "",
+                    mac=mac or "",
+                )
+                or cache_dirty
+            )
 
         if cache_dirty:
             self._save_cache(cache)
 
-        await ctx.message.reply(embed=embed)
+        await ctx.send(embed=embed)
 
     @requires_admin()
-    @commands.command(name="lan_rmcache", description="Remove cached LAN info")
+    @commands.hybrid_command(name="lan_rmcache", description="Remove cached LAN info")
     async def refresh_cache(self, ctx: commands.Context, ip: str = "") -> None:
         if not ip:
             # backup_raw = pprint.pformat(self._load_cache())
             backup_raw = json.dumps(self._load_cache())
             backup = io.BytesIO(backup_raw.encode("utf-8"))
 
-            self._save_cache({
-                "ips": {},
-                "aliases": {},
-                "favorites": [],
-                "mac_vendors": {},
-            })
+            self._save_cache(
+                {
+                    "ips": {},
+                    "aliases": {},
+                    "favorites": [],
+                    "mac_vendors": {},
+                }
+            )
 
             await ctx.send(
                 embed=discord.Embed(
                     title="Cache Cleared",
-                    description="Cleared entire LAN cache. Attached is a backup of the cache before it was cleared.",
-                    color=discord.Color.green()
+                    description=(
+                        "Cleared entire LAN cache. "
+                        "Attached is a backup of the cache before it was cleared."
+                    ),
+                    color=discord.Color.green(),
                 ),
-                file=discord.File(fp=backup, filename="backup.txt")
+                file=discord.File(fp=backup, filename="backup.txt"),
             )
 
             return
@@ -480,7 +507,7 @@ class LAN(commands.Cog):
             if regexp.fullmatch(
                 pattern=r"([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}",
                 string=ip.strip(),
-                flags=regexp.IGNORECASE
+                flags=regexp.IGNORECASE,
             ):
                 cache = self._load_cache()
                 mac_key = ip.lower()
@@ -490,10 +517,19 @@ class LAN(commands.Cog):
                 if existed:
                     await send_success(ctx, description=f"Cleared cached vendor for `{mac_key}`.")
                 else:
-                    await send_warning(ctx, title="No Cached Info", description=f"No cached vendor found for `{mac_key}`.")
+                    await send_warning(
+                        ctx,
+                        title="No Cached Info",
+                        description=f"No cached vendor found for `{mac_key}`.",
+                    )
                 return
 
-            await send_error(ctx, description=f"Error parsing IP address `{ip}`. Ensure you provided a valid IPv4 address.")
+            await send_error(
+                ctx,
+                description=(
+                    f"Error parsing IP address `{ip}`. Ensure you provided a valid IPv4 address."
+                ),
+            )
             return
 
         cache = self._load_cache()
@@ -504,14 +540,21 @@ class LAN(commands.Cog):
         if existed:
             await send_success(ctx, description=f"Cleared cached info for `{ip_key}`.")
         else:
-            await send_warning(ctx, title="No Cached Info", description=f"No cached info found for `{ip_key}`.")
+            await send_warning(
+                ctx, title="No Cached Info", description=f"No cached info found for `{ip_key}`."
+            )
 
     @requires_admin()
-    @commands.command(name="lan_addalias", description="Set an alias for a LAN IP")
+    @commands.hybrid_command(name="lan_addalias", description="Set an alias for a LAN IP")
     async def lan_alias_set(self, ctx: commands.Context, ip: str, alias: str) -> None:
         ip_addr: IPAddress | None = IPAddress.parse(ip)
         if not ip_addr:
-            await send_error(ctx, description=f"Error parsing IP address `{ip}`. Ensure you provided a valid IPv4 address.")
+            await send_error(
+                ctx,
+                description=(
+                    f"Error parsing IP address `{ip}`. Ensure you provided a valid IPv4 address."
+                ),
+            )
             return
 
         cache = self._load_cache()
@@ -536,7 +579,7 @@ class LAN(commands.Cog):
         await send_success(ctx, description=f"Alias `{normalized}` set for `{ip_addr}`.")
 
     @requires_admin()
-    @commands.command(name="lan_rmalias", description="Remove a LAN alias")
+    @commands.hybrid_command(name="lan_rmalias", description="Remove a LAN alias")
     async def lan_alias_remove(self, ctx: commands.Context, alias: str) -> None:
         cache = self._load_cache()
         alias_map = cache.get("aliases", {})
@@ -550,12 +593,14 @@ class LAN(commands.Cog):
         self._save_cache(cache)
 
         if existed:
-            await send_success(ctx, description=f"Alias `{normalized}` has been successfully removed.")
+            await send_success(
+                ctx, description=f"Alias `{normalized}` has been successfully removed."
+            )
         else:
             await send_error(ctx, description=f"Alias `{normalized}` not found.")
 
     @requires_admin()
-    @commands.command(name="lan_lsalias", description="List LAN aliases")
+    @commands.hybrid_command(name="lan_lsalias", description="List LAN aliases")
     async def lan_alias_list(self, ctx: commands.Context) -> None:
         cache = self._load_cache()
         alias_map = cache.get("aliases", {})
@@ -567,12 +612,14 @@ class LAN(commands.Cog):
         await send_info(
             ctx,
             title="Aliases",
-            description="\n".join([f"- `{alias}`: `{ip}`" for alias, ip in sorted(alias_map.items())]),
+            description="\n".join(
+                [f"- `{alias}`: `{ip}`" for alias, ip in sorted(alias_map.items())]
+            ),
             footer_text=cache_footer,
         )
 
     @requires_admin()
-    @commands.command(name="lan_addfav", description="Add a LAN favorite")
+    @commands.hybrid_command(name="lan_addfav", description="Add a LAN favorite")
     async def lan_fav_add(self, ctx: commands.Context, target: str, *, name: str) -> None:
         cache = self._load_cache()
         display_name = name.strip()
@@ -584,35 +631,36 @@ class LAN(commands.Cog):
 
         if not resolved:
             await send_error(
-                ctx,
-                description=f"Unknown target `{target}`. Use an IP or add an alias."
+                ctx, description=f"Unknown target `{target}`. Use an IP or add an alias."
             )
             return
 
         favorites = cache.get("favorites", [])
         normalized = display_name.lower()
 
-        existing = next((entry for entry in favorites if entry.get("name", "").lower() == normalized), None)
+        existing = next(
+            (entry for entry in favorites if entry.get("name", "").lower() == normalized), None
+        )
         if existing:
             existing_name = existing.get("name", normalized)
             await send_warning(
-                ctx,
-                title="Already Favorited",
-                description=f"`{existing_name}` already exists."
+                ctx, title="Already Favorited", description=f"`{existing_name}` already exists."
             )
             return
 
-        favorites.append({
-            "name": display_name,
-            "target": resolved,
-        })
+        favorites.append(
+            {
+                "name": display_name,
+                "target": resolved,
+            }
+        )
         cache["favorites"] = favorites
         self._save_cache(cache)
 
         await send_success(ctx, description=f"Added `{display_name}` -> `{resolved}` to favorites.")
 
     @requires_admin()
-    @commands.command(name="lan_rmfav", description="Remove a LAN favorite")
+    @commands.hybrid_command(name="lan_rmfav", description="Remove a LAN favorite")
     async def lan_fav_remove(self, ctx: commands.Context, *, target: str) -> None:
         cache = self._load_cache()
         favorites = cache.get("favorites", [])
@@ -644,7 +692,7 @@ class LAN(commands.Cog):
         await send_warning(ctx, title="Not Found", description=f"`{target}` is not a favorite.")
 
     @requires_admin()
-    @commands.command(name="lan_lsfav", description="List LAN favorites")
+    @commands.hybrid_command(name="lan_lsfav", description="List LAN favorites")
     async def lan_fav_list(self, ctx: commands.Context) -> None:
         cache = self._load_cache()
         favorites = cache.get("favorites", [])
@@ -656,15 +704,17 @@ class LAN(commands.Cog):
         await send_info(
             ctx,
             title="Favorites",
-            description="\n".join([
-                f"- `{entry.get('name', 'unknown')}`: `{entry.get('target', 'unknown')}`"
-                for entry in sorted(favorites, key=lambda item: item.get("name", ""))
-            ]),
+            description="\n".join(
+                [
+                    f"- `{entry.get('name', 'unknown')}`: `{entry.get('target', 'unknown')}`"
+                    for entry in sorted(favorites, key=lambda item: item.get("name", ""))
+                ]
+            ),
             footer_text=cache_footer,
         )
 
     @requires_admin()
-    @commands.command(name="lan_health", description="Show status for favorited LAN devices")
+    @commands.hybrid_command(name="lan_health", description="Show status for favorited LAN devices")
     async def lan_health(self, ctx: commands.Context, ping_count: int = 1) -> None:
         if ping_count < 1 or ping_count > 10:
             await send_error(ctx, description="Ping count must be between 1 and 10.")
@@ -674,11 +724,7 @@ class LAN(commands.Cog):
         favorites = cache.get("favorites", [])
 
         if not favorites:
-            await send_warning(
-                ctx,
-                title="No Favorites",
-                description="No favorites found."
-            )
+            await send_warning(ctx, title="No Favorites", description="No favorites found.")
             return
 
         loader = "<a:loader:1502454894085541972>"
@@ -710,7 +756,9 @@ class LAN(commands.Cog):
             else:
                 host = self._ping_device(ip_addr, ping_count=ping_count)
                 if host and host.is_alive:
-                    lines[index] = f"- **{display_name}** (`{resolved}`): :white_check_mark: Online (`{host.avg_rtt}ms`)"
+                    lines[index] = (
+                        f"- **{display_name}** (`{resolved}`): :white_check_mark: Online (`{host.avg_rtt}ms`)"  # noqa: E501
+                    )
                     successes += 1
                 else:
                     lines[index] = f"- **{display_name}** (`{resolved}`): :x: Offline"
@@ -734,11 +782,13 @@ class LAN(commands.Cog):
         await message.edit(embed=embed)
 
     @requires_admin()
-    @commands.command(name="lan_publicip", description="Show the public IP for the bot's network")
+    @commands.hybrid_command(
+        name="lan_publicip", description="Show the public IP for the bot's network"
+    )
     async def lan_publicip(self, ctx: commands.Context) -> None:
         try:
-            async with httpx.AsyncClient(timeout=5) as requests:
-                response = await requests.get("https://myip.wtf/text", timeout=5)
+            async with httpx.AsyncClient(timeout=5) as client:
+                response = await client.get("https://myip.wtf/text", timeout=5)
                 response.raise_for_status()
                 ip_text = response.text.strip()
         except Exception:

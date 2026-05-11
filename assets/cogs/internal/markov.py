@@ -1,11 +1,13 @@
+import json
+import logging
 import random
 import re
-import logging
-import json
 import time
-import markovify
+
 import discord
+import markovify
 from discord.ext import commands
+
 from modules.embeds import send_error, send_info
 from modules.markovmemory import (
     load_markov_model,
@@ -34,14 +36,15 @@ class Markov(commands.Cog):
         self.model: markovify.NewlineText | None = load_markov_model()
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command()
     async def retrain(self, ctx: commands.Context):
         message_ref: discord.Message | None = await send_message(
-            ctx, embed=discord.Embed(
+            ctx,
+            embed=discord.Embed(
                 title="Retraining Model",
                 description="Retraining the Markov model, please wait...",
-                color=discord.Color.orange()
-            )
+                color=discord.Color.orange(),
+            ),
         )
 
         if message_ref is None:
@@ -61,11 +64,12 @@ class Markov(commands.Cog):
         data_size: int = len(memory)
 
         processing_message_ref: discord.Message | None = await send_message(
-            ctx, embed=discord.Embed(
+            ctx,
+            embed=discord.Embed(
                 title="Processing Data",
                 description=f"Processing `{data_size}` data points...",
-                color=discord.Color.orange()
-            )
+                color=discord.Color.orange(),
+            ),
         )
 
         if processing_message_ref is None:
@@ -95,23 +99,27 @@ class Markov(commands.Cog):
             edit_message_reference=processing_message_ref,
         )
 
-    @commands.command()
+    @commands.hybrid_command()
     async def talk(self, ctx: commands.Context, sentence_size: int = 5) -> None:
         if not self.model:
-            await send_info(ctx, title="Not Enough Data", description="I need to learn more from messages before I can talk.")
+            await send_info(
+                ctx,
+                title="Not Enough Data",
+                description="I need to learn more from messages before I can talk.",
+            )
             return
 
         response: str = ""
         if sentence_size == 1:
             response = (
                 self.model.make_short_sentence(max_chars=200, tries=700)
-                or 'I have nothing to say right now!'
+                or "I have nothing to say right now!"
             )
 
         else:
             response = improve_sentence_coherence(
                 self.model.make_sentence(tries=100, max_words=sentence_size)
-                or 'I have nothing to say right now!'
+                or "I have nothing to say right now!"
             )
 
         cleaned_response: str = re.sub(r"[^\w\s]", "", response).lower()

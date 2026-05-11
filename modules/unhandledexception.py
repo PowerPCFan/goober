@@ -1,8 +1,10 @@
-import sys
 import logging
+import sys
 import traceback
+
 import discord
 from discord.ext.commands import Context
+
 from modules.sentenceprocessing import send_message
 from modules.settings import instance as settings_manager
 
@@ -18,22 +20,26 @@ def handle_exception(exc_type, exc_value, exc_traceback, *, context: str | None 
     logger.error("=====BEGINNING OF TRACEBACK=====")
     traceback.print_exception(exc_type, exc_value, exc_traceback)
     logger.error("========END OF TRACEBACK========")
-    logger.error('An unhandled exception occurred.')
+    logger.error("An unhandled exception occurred.")
 
     if context:
         logger.error(f"Context: {context}")
 
 
-async def handle_exception_with_context(ctx: Context, exc_type, exc_value, exc_traceback, *, context: str | None = None):
+async def handle_exception_with_context(
+    ctx: Context, exc_type, exc_value, exc_traceback, *, context: str | None = None
+):
     handle_exception(exc_type, exc_value, exc_traceback, context=context)
+
+    exception_class = repr(exc_type).replace("<class '", "").replace("'>", "")
 
     embed = discord.Embed(
         title="Command failed",
-        description=f"`{repr(exc_type).replace("<class '", "").replace("'>", "")}: {str(exc_value)}`",
-        color=discord.Color.red()
+        description=f"`{exception_class}: {str(exc_value)}`",
+        color=discord.Color.red(),
     )
 
     embed.set_footer(text="Bot Admin: Please check logs for more information")
-    # embed.description = "```" + "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))[-4000:] + "```"
+    # embed.description = "```" + "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))[-4000:] + "```"  # noqa: E501
 
     await send_message(ctx, embed=embed)

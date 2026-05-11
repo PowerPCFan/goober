@@ -1,9 +1,10 @@
 import discord
 from discord.ext import commands
-from modules.embeds import send_success, send_error, send_info
+
+from modules.embeds import send_error, send_info, send_success
+from modules.globalvars import available_cogs
 from modules.permission import requires_admin
 from modules.settings import instance as settings_manager
-from modules.globalvars import available_cogs
 
 settings = settings_manager.settings
 
@@ -18,17 +19,19 @@ class CogManager(commands.Cog):
         self.description = "💼|Commands for managing cogs"
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Enable a cog")
     async def enable(self, ctx, cog_name: str):
         try:
             await self.bot.load_extension(COG_PREFIX + cog_name)
-            await send_success(ctx, title="Cog Enabled", description=f"Enabled cog `{cog_name}` successfully.")
-            settings.bot.enabled_cogs.append(cog_name)
+            await send_success(
+                ctx, title="Cog Enabled", description=f"Enabled cog `{cog_name}` successfully."
+            )
+            settings.bot.disabled_cogs.remove(cog_name)
             settings_manager.add_admin_log_event(
                 {
-                    "action": "add",
+                    "action": "del",
                     "author": ctx.author.id,
-                    "change": "enabled_cogs",
+                    "change": "disabled_cogs",
                     "messageId": ctx.message.id,
                     "target": cog_name,
                 }
@@ -39,7 +42,7 @@ class CogManager(commands.Cog):
             await send_error(ctx, description=f"Error enabling cog `{cog_name}`: {e}")
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Load a cog")
     async def load(self, ctx, cog_name: str | None = None):
         if cog_name is None:
             await send_error(ctx, description="Please provide the cog name to load.")
@@ -47,37 +50,43 @@ class CogManager(commands.Cog):
 
         try:
             await self.bot.load_extension(COG_PREFIX + cog_name)
-            await send_success(ctx, title="Cog Loaded", description=f"Loaded cog `{cog_name}` successfully.")
+            await send_success(
+                ctx, title="Cog Loaded", description=f"Loaded cog `{cog_name}` successfully."
+            )
         except Exception as e:
             await send_error(ctx, description=f"Error loading cog `{cog_name}`: {e}")
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Unload a cog")
     async def unload(self, ctx, cog_name: str | None = None):
         if cog_name is None:
             await send_error(ctx, description="Please provide the cog name to unload.")
             return
         try:
             await self.bot.unload_extension(COG_PREFIX + cog_name)
-            await send_success(ctx, title="Cog Unloaded", description=f"Unloaded cog `{cog_name}` successfully.")
+            await send_success(
+                ctx, title="Cog Unloaded", description=f"Unloaded cog `{cog_name}` successfully."
+            )
         except Exception as e:
             await send_error(ctx, description=f"Error unloading cog `{cog_name}`: {e}")
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Disable a cog")
     async def disable(self, ctx, cog_name: str | None = None):
         if cog_name is None:
             await send_error(ctx, description="Please provide the cog name to disable.")
             return
         try:
             await self.bot.unload_extension(COG_PREFIX + cog_name)
-            await send_success(ctx, title="Cog Disabled", description=f"Disabled cog `{cog_name}` successfully.")
-            settings.bot.enabled_cogs.remove(cog_name)
+            await send_success(
+                ctx, title="Cog Disabled", description=f"Disabled cog `{cog_name}` successfully."
+            )
+            settings.bot.disabled_cogs.append(cog_name)
             settings_manager.add_admin_log_event(
                 {
-                    "action": "del",
+                    "action": "add",
                     "author": ctx.author.id,
-                    "change": "enabled_cogs",
+                    "change": "disabled_cogs",
                     "messageId": ctx.message.id,
                     "target": cog_name,
                 }
@@ -87,7 +96,7 @@ class CogManager(commands.Cog):
             await send_error(ctx, description=f"Error disabling cog `{cog_name}`: {e}")
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Reload a cog")
     async def reload(self, ctx, cog_name: str | None = None):
         if cog_name is None:
             await send_error(ctx, description="Please provide the cog name to reload.")
@@ -96,15 +105,19 @@ class CogManager(commands.Cog):
         try:
             await self.bot.unload_extension(COG_PREFIX + cog_name)
             await self.bot.load_extension(COG_PREFIX + cog_name)
-            await send_success(ctx, title="Cog Reloaded", description=f"Reloaded cog `{cog_name}` successfully.")
+            await send_success(
+                ctx, title="Cog Reloaded", description=f"Reloaded cog `{cog_name}` successfully."
+            )
         except Exception as e:
             await send_error(ctx, description=f"Error reloading cog `{cog_name}`: {e}")
 
-    @commands.command()
+    @commands.hybrid_command(description="List all loaded and available cogs")
     async def listcogs(self, ctx):
         cogs = list(self.bot.cogs.keys())
         if not cogs:
-            await send_info(ctx, title="No Cogs Loaded", description="No cogs are currently loaded.")
+            await send_info(
+                ctx, title="No Cogs Loaded", description="No cogs are currently loaded."
+            )
             return
 
         embed = discord.Embed(

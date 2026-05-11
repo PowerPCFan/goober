@@ -8,7 +8,7 @@ class WhoAmI(commands.Cog):
         self.name = "Who Am I?"
         self.description = "👤 | A command to show your user information"
 
-    @commands.command()
+    @commands.hybrid_command(description="Show your user information")
     async def whoami(self, ctx: commands.Context):
         user_id = ctx.author.id
         username = ctx.author.name

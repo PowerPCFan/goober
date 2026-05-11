@@ -40,7 +40,7 @@ class BotSettings:
     allow_show_mem_command: bool
     react_to_messages: bool
     misc: MiscBotOptions
-    enabled_cogs: list[str]
+    disabled_cogs: list[str]
     active_memory: str
     active_model: str
     sync_hub: SyncHub
@@ -59,7 +59,7 @@ class AdminLogEvent:
     author: int
     target: str | int
     action: Literal["del", "add", "set"]
-    change: Literal["owner_ids", "blacklisted_users", "enabled_cogs"]
+    change: Literal["owner_ids", "blacklisted_users", "disabled_cogs"]
 
 
 def _build_settings(data: Mapping[str, Any]) -> SettingsType:
@@ -80,7 +80,7 @@ def _build_settings(data: Mapping[str, Any]) -> SettingsType:
             positive_gifs=list(misc_data["positive_gifs"]),
             block_profanity=bool(misc_data["block_profanity"]),
         ),
-        enabled_cogs=list(bot_data["enabled_cogs"]),
+        disabled_cogs=list(bot_data["disabled_cogs"]),
         active_memory=str(bot_data["active_memory"]),
         active_model=str(bot_data["active_model"]),
         sync_hub=SyncHub(**bot_data["sync_hub"])

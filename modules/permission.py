@@ -32,7 +32,7 @@ def requires_admin():
             logger.info(f"Unknown command ran: {ctx.command} ran by @{ctx.author.name} (message: {ctx.message})")
         else:
             logger.info(
-                f'Command {settings.bot.prefix}{ctx.command.name} ran by @{ctx.author.name}'
+                f"Admin command '{ctx.command.name}' ran by @{ctx.author.name}"
             )
         return True
 

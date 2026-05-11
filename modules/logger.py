@@ -1,18 +1,17 @@
 import logging
-from modules.globalvars import DEBUG, RESET, GREEN, YELLOW, RED, PURPLE
+
+from modules.globalvars import DEBUG, GREEN, PURPLE, RED, RESET, YELLOW
 
 
 class GooberFormatter(logging.Formatter):
     def __init__(self, colors: bool = True):  # Disable colors for TXT output
         self.colors = colors
 
-        self._format = f"[ %(levelname)-8s ]: %(message)s {DEBUG} [%(asctime)s.%(msecs)03d] (%(filename)s:%(funcName)s) {RESET}"
+        self._format = f"[ %(levelname)-8s ]: %(message)s {DEBUG} [%(asctime)s.%(msecs)03d] (%(filename)s:%(funcName)s) {RESET}"  # noqa: E501
 
         self.FORMATS = {
             logging.DEBUG: DEBUG + self._format + RESET,
-            logging.INFO: self._format.replace(
-                "%(levelname)-8s", f"{GREEN}%(levelname)-8s{RESET}"
-            ),
+            logging.INFO: self._format.replace("%(levelname)-8s", f"{GREEN}%(levelname)-8s{RESET}"),
             logging.WARNING: YELLOW + self._format + RESET,
             logging.ERROR: RED + self._format + RESET,
             logging.CRITICAL: PURPLE + self._format + RESET,

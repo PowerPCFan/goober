@@ -9,6 +9,7 @@ import httpx
 import psutil
 import logging
 from modules.sync_connector import instance as synchub
+from typing import Literal
 
 settings = settings_manager.settings
 
@@ -21,8 +22,8 @@ class BaseCommands(commands.Cog):
         self.name = "General"
         self.description = "🌐 | Commands for various stuff"
 
-    @commands.command()
-    async def help(self, ctx: commands.Context, layout: str = "h") -> None:
+    @commands.hybrid_command(description="Get help with bot commands")
+    async def help(self, ctx: commands.Context, layout: Literal["h", "v"] = "h") -> None:
         embed: discord.Embed = discord.Embed(
             title="Bot Help",
             description=f"List of commands grouped by category. Do `{settings.bot.prefix}help v` to use a vertical layout",
@@ -60,7 +61,7 @@ class BaseCommands(commands.Cog):
 
         await send_message(ctx, embed=embed)
 
-    @commands.command()
+    @commands.hybrid_command(description="Check the bot's latency")
     async def ping(self, ctx: commands.Context) -> None:
         await ctx.defer()
         latency: int = round(self.bot.latency * 1000)
@@ -77,7 +78,7 @@ class BaseCommands(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.hybrid_command(description="Learn more about the bot")
     async def about(self, ctx: commands.Context) -> None:
         embed: discord.Embed = discord.Embed(
             title='About me',
@@ -95,7 +96,7 @@ class BaseCommands(commands.Cog):
 
         await send_message(ctx, embed=embed)
 
-    @commands.command()
+    @commands.hybrid_command(description="View bot statistics and settings")
     async def stats(self, ctx: commands.Context) -> None:
         memory_file: str = settings.bot.active_memory
         file_size: int = os.path.getsize(memory_file)
@@ -141,7 +142,7 @@ class BaseCommands(commands.Cog):
         await send_message(ctx, embed=embed)
 
     @requires_admin()
-    @commands.command()
+    @commands.hybrid_command(description="Share the bot's memory file")
     async def mem(self, ctx: commands.Context) -> None:
         if not settings.bot.allow_show_mem_command:
             return

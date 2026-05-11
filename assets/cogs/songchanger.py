@@ -1,9 +1,12 @@
+from typing import get_args
+
 import discord
 from discord.ext import commands
-from modules.globalvars import RED, GREEN, RESET
-from modules.settings import ActivityType, instance as settings_manager
+
+from modules.globalvars import GREEN, RED, RESET
 from modules.permission import requires_admin
-from typing import get_args
+from modules.settings import ActivityType
+from modules.settings import instance as settings_manager
 
 
 class SongChanger(commands.Cog):
@@ -13,29 +16,29 @@ class SongChanger(commands.Cog):
         self.description = "🎧|Changes the bot's 'Listening to' status"
 
     @requires_admin()
-    @commands.command()
-    async def change_song(self, ctx, song: str):
+    @commands.hybrid_command(description="Change the bot's listening status to a song")
+    async def change_song(self, ctx: commands.Context, song: str):
         await ctx.send(f"Changed song to {song}")
         try:
             await self.bot.change_presence(
-                activity=discord.Activity(
-                    type=discord.ActivityType.listening, name=f"{song}"
-                )
+                activity=discord.Activity(type=discord.ActivityType.listening, name=f"{song}")
             )
             print(f"{GREEN}Changed song to {song}{RESET}")
         except Exception as e:
             print(f"{RED}An error occurred while changing songs..: {str(e)}{RESET}")
 
     @requires_admin()
-    @commands.command()
-    async def change_activity(self, ctx: commands.Context, type: str | None, *string):
+    @commands.hybrid_command(description="Change the bot's activity type and content")
+    async def change_activity(self, ctx: commands.Context, type: str | None, *, string: str):
         if type not in get_args(ActivityType):
-            await ctx.send(f"Type needs to be one of the following: {', '.join(get_args(ActivityType))}")
+            await ctx.send(
+                f"Type needs to be one of the following: {', '.join(get_args(ActivityType))}"
+            )
             return
 
-        settings_manager.settings.bot.misc.activity = {
+        settings_manager.settings.bot.misc.activity = {  # pyright: ignore[reportAttributeAccessIssue]
             "type": type,
-            "content": ' '.join(string)
+            "content": string,
         }
 
         settings_manager.commit()

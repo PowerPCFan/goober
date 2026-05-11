@@ -1,20 +1,31 @@
 import logging
-from pathlib import Path
-from modules.embeds import send_error
-from modules.logger import GooberFormatter
-import tracemalloc
 import os
+import sys
 import time
 import traceback
-import sys
-from typing import Literal, Set, TypedDict
-from modules.settings import instance as settings_manager, ActivityType
+import tracemalloc
+from pathlib import Path
+from typing import Literal, TypedDict
+
 import discord
-from discord.ext import commands
-from better_profanity import profanity
 import markovify
-from modules.markovmemory import load_memory, load_markov_model, save_memory, train_markov_model
-from modules.sentenceprocessing import append_mentions_to_18digit_integer, preprocess_message
+from better_profanity import profanity
+from discord.ext import commands
+
+from modules.embeds import send_error
+from modules.logger import GooberFormatter
+from modules.markovmemory import (
+    load_markov_model,
+    load_memory,
+    save_memory,
+    train_markov_model,
+)
+from modules.sentenceprocessing import (
+    append_mentions_to_18digit_integer,
+    preprocess_message,
+)
+from modules.settings import ActivityType
+from modules.settings import instance as settings_manager
 from modules.unhandledexception import handle_exception, handle_exception_with_context
 
 logger = logging.getLogger("goober")
@@ -73,16 +84,14 @@ intents.presences = True
 intents.members = True
 
 bot: commands.Bot = commands.Bot(
-    command_prefix=settings.bot.prefix,
-    intents=intents,
-    help_command=None
+    command_prefix=settings.bot.prefix, intents=intents, help_command=None
 )
 
 # Load memory and Markov model for text generation
 memory: list[str | dict[Literal["_meta"], MessageMetadata]] = load_memory()
 markov_model: markovify.Text | None = load_markov_model()
 if not markov_model:
-    logger.error('Markov model not found!')
+    logger.error("Markov model not found!")
     memory = load_memory()
     markov_model = train_markov_model(memory)
 
@@ -90,16 +99,16 @@ if not markov_model:
 # connect to synchub
 # synchub.try_to_connect()
 
-generated_sentences: Set[str] = set()
-used_words: Set[str] = set()
+generated_sentences: set[str] = set()
+used_words: set[str] = set()
 
 
 async def load_cogs_from_folder(bot: commands.Bot, folder_name: str, internal: bool = False):
     for filename in [file for file in os.listdir(folder_name) if file.endswith(".py")]:
         cog_name: str = filename[:-3]
 
-        if not internal and cog_name not in settings.bot.enabled_cogs:
-            logger.debug(f"Skipping cog {cog_name} (not in enabled cogs)")
+        if not internal and cog_name in settings.bot.disabled_cogs:
+            logger.debug(f"Skipping cog {cog_name} (disabled)")
             continue
 
         module_path = folder_name.replace("/", ".").replace("\\", ".") + f".{cog_name}"
@@ -122,6 +131,7 @@ async def on_ready() -> None:
 
     await load_cogs_from_folder(bot, "assets/cogs/internal", internal=True)
     await load_cogs_from_folder(bot, "assets/cogs")
+
     try:
         synced: list[discord.app_commands.AppCommand] = await bot.tree.sync()
 
@@ -131,7 +141,8 @@ async def on_ready() -> None:
     except discord.errors.Forbidden as perm_error:
         logger.error(f"Permission error while syncing commands: {perm_error}")
         logger.error(
-            "Make sure the bot has the 'applications.commands' scope and is invited with the correct permissions."
+            "Make sure the bot has the 'applications.commands' scope "
+            "and is invited with the correct permissions."
         )
     except Exception as e:
         logger.error(f"Failed to sync commands: {e}")
@@ -160,7 +171,7 @@ async def on_ready() -> None:
     launched = True
 
     logger.info(f"Running as {bot.user}")
-    logger.info(f"Guilds: {", ".join([guild.name for guild in bot.guilds])}")
+    logger.info(f"Guilds: {', '.join([guild.name for guild in bot.guilds])}")
 
 
 @bot.event
@@ -211,10 +222,7 @@ async def on_message(message: discord.Message) -> None:
     if not settings.bot.user_training:
         return
 
-    if (
-        settings.bot.misc.block_profanity
-        and profanity.contains_profanity(message.content)
-    ):
+    if settings.bot.misc.block_profanity and profanity.contains_profanity(message.content):
         return
 
     formatted_message: str = append_mentions_to_18digit_integer(message.content)
@@ -251,12 +259,16 @@ async def on_message(message: discord.Message) -> None:
 
 @bot.event
 async def on_interaction(interaction: discord.Interaction) -> None:
-    logger.info(f"Info: {"[USER INTERACTION] " if interaction.is_user_integration() else ''}@{interaction.user.name} ran '{interaction.command.name if interaction.command else 'unknown command'}' in #{interaction.channel.name if interaction.channel and not isinstance(interaction.channel, discord.DMChannel) else ("DM" if isinstance(interaction.channel, discord.DMChannel) else 'Unknown Channel')} ({interaction.guild.name if interaction.guild else 'Unknown Guild / DM'})")  # noqa: E501
+    logger.info(
+        f"@{interaction.user.name} ran '{interaction.command.name if interaction.command else 'unknown command'}' in #{interaction.channel.name if interaction.channel and not isinstance(interaction.channel, discord.DMChannel) else ('DM' if isinstance(interaction.channel, discord.DMChannel) else 'Unknown Channel')} ({interaction.guild.name if interaction.guild else 'Unknown Guild / DM'})"  # noqa: E501
+    )  # noqa: E501
 
 
 @bot.event
 async def on_command(ctx: commands.Context) -> None:
-    logger.info(f"Info: @{ctx.author.name} ran '{ctx.command.name if ctx.command else 'unknown command'}' in #{ctx.channel.name if ctx.channel and not isinstance(ctx.channel, discord.DMChannel) else ("DM" if isinstance(ctx.channel, discord.DMChannel) else 'Unknown Channel')} ({ctx.guild.name if ctx.guild else 'Unknown Guild / DM'})")  # noqa: E501
+    logger.info(
+        f"@{ctx.author.name} ran '{ctx.command.name if ctx.command else 'unknown command'}' in #{ctx.channel.name if ctx.channel and not isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)) else ('DM' if isinstance(ctx.channel, discord.DMChannel) else 'Unknown Channel')} ({ctx.guild.name if ctx.guild else 'Unknown Guild / DM'})"  # noqa: E501
+    )  # noqa: E501
 
 
 # Global check: Block blacklisted users from running commands
@@ -268,11 +280,11 @@ async def block_blacklisted(ctx: commands.Context) -> bool:
     try:
         if isinstance(ctx, discord.Interaction):
             if not ctx.response.is_done():
-                await ctx.response.send_message('blacklisted', ephemeral=True)
+                await ctx.response.send_message("blacklisted", ephemeral=True)
             else:
-                await ctx.followup.send('blacklisted', ephemeral=True)
+                await ctx.followup.send("blacklisted", ephemeral=True)
         else:
-            await ctx.send('Blacklisted user', ephemeral=True)
+            await ctx.send("Blacklisted user", ephemeral=True)
     except Exception:
         return False
 

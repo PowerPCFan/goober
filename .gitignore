@@ -19,3 +19,4 @@ data/
 .venv
 assets/images/cache
 logs/
+ruff_cache/

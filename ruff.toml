@@ -1,0 +1,49 @@
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+
+line-length = 100
+
+target-version = "py311"
+
+select = ["ALL"]
+ignore = [
+    "UP015",      # Checks for redundant open modes
+    "INP001",     # Checks for missing __init__.py
+    "D",          # Docstring stuff
+    "BLE",        # Blind `except Exception` - i should probably get used to not doing this lol
+    "T201","T203" # Alerts when you use `print` statements
+
+]
+
+fixable = ["ALL"]
+unfixable = []
+
+[format]
+quote-style = "double"
+indent-style = "space"

@@ -1,14 +1,16 @@
+import datetime
+import logging
+import math
+from typing import TypedDict
+
 import discord
-from discord.ext import commands
 import discord.ext
 import discord.ext.commands
-import math
+import httpx
+from discord.ext import commands
+
 from modules.sentenceprocessing import send_message
 from modules.settings import instance as settings_manager
-from typing import TypedDict
-import httpx
-import logging
-import datetime
 
 
 class SettingsType(TypedDict):
@@ -328,7 +330,11 @@ class Climate(commands.Cog):
         self.bot: discord.ext.commands.Bot = bot
         self.description = "🌱|Monitor my indoor and outdoor climates"
 
-    def get_ranking(self, current_value: float, thresholds: dict[int, ThresholdValue]) -> ThresholdValue:
+    def get_ranking(
+        self,
+        current_value: float,
+        thresholds: dict[int, ThresholdValue]
+    ) -> ThresholdValue:
         found_threshold: ThresholdValue = {
             "emoji": "",
             "label": ""
@@ -342,7 +348,13 @@ class Climate(commands.Cog):
 
         return found_threshold
 
-    def format_embed(self, label: str, unit: str, value: float, threshold: dict[int, ThresholdValue] | None = None) -> dict:
+    def format_embed(
+        self,
+        label: str,
+        unit: str,
+        value: float,
+        threshold: dict[int, ThresholdValue] | None = None
+    ) -> dict:
         if unit and unit.startswith("-"):
             sep = ""
             unit = unit[1:]
@@ -366,7 +378,9 @@ class Climate(commands.Cog):
         hour = now.hour + now.minute / 60 + now.second / 3600
         solar_hour = hour + (settings["longitude"] + 60) / 15  # +60 for UTC-4 timezone
         nth_day_of_year = (now - datetime.datetime(now.year, 1, 1)).days + 1
-        declination = math.radians(23.445 * math.sin(math.radians((360 / 365.25) * (nth_day_of_year - 81))))
+        declination = math.radians(
+            23.445 * math.sin(math.radians((360 / 365.25) * (nth_day_of_year - 81)))
+        )
         hour_angle = math.radians(15 * (solar_hour - 12))
 
         result = math.degrees(math.asin(
@@ -383,7 +397,7 @@ class Climate(commands.Cog):
 
         return result
 
-    @commands.command()
+    @commands.hybrid_command(description="Get indoor climate data")
     async def indoors(self, ctx: commands.Context):
         async with httpx.AsyncClient() as client:
             data: Indoor = (await client.get("http://192.168.1.45:8080/latest/indoor")).json()
@@ -400,9 +414,9 @@ class Climate(commands.Cog):
         except ValueError:
             timestamp = 0
 
-        embed.add_field(**self.format_embed("Temperature", "-°F", (data["temperature"] * (9 / 5)) + 32, INDOOR_TEMP_THRESHOLDS))
-        embed.add_field(**self.format_embed("Humidity", "-% RH", data["humidity"], HUMIDITY_THRESHOLDS))
-        embed.add_field(**self.format_embed("Pressure", "hPa", data['pressure'], PRESSURE_THRESHOLDS))
+        embed.add_field(**self.format_embed("Temperature", "-°F", (data["temperature"] * (9 / 5)) + 32, INDOOR_TEMP_THRESHOLDS))  # noqa: E501
+        embed.add_field(**self.format_embed("Humidity", "-% RH", data["humidity"], HUMIDITY_THRESHOLDS))  # noqa: E501
+        embed.add_field(**self.format_embed("Pressure", "hPa", data['pressure'], PRESSURE_THRESHOLDS))  # noqa: E501
 
         embed.add_field(**self.format_embed("Gas", "kΩ", data['gas'], RESISTANCE_THRESHOLDS))
         embed.add_field(**self.format_embed("CO2", "PPM", data['carbon_dioxide'], CO2_THRESHOLDS))
@@ -411,6 +425,7 @@ class Climate(commands.Cog):
         embed.add_field(**self.format_embed("PM1.0", "µg/m³", data['pm1_0']))
         embed.add_field(**self.format_embed("PM2.5", "µg/m³", data['pm2_5'], PM25_THRESHOLDS))
         embed.add_field(**self.format_embed("PM10.0", "µg/m³", data['pm10_0'], PM100_THRESHOLDS))
+
 
         embed.timestamp = datetime.datetime.fromtimestamp(timestamp)
 

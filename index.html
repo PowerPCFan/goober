@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/rust.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/powershell.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/swift.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/kotlin.min.js"></script>
+    <style>
+        :root {
+            --base00: #282828;
+            --base01: #3c3836;
+            --base02: #504945;
+            --base03: #665c54;
+            --base04: #bdae93;
+            --base05: #d5c4a1;
+            --base06: #ebdbb2;
+            --base07: #fbf1c7;
+            --base08: #fb4934;
+            --base09: #fe8019;
+            --base0A: #fabd2f;
+            --base0B: #b8bb26;
+            --base0C: #8ec07c;
+            --base0D: #83a598;
+            --base0E: #d3869b;
+            --base0F: #d65d0e;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            height: 100%;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        body {
+            margin: 0;
+            height: 100%;
+            font-family: "Inter", system-ui;
+            color: #FFFFFF;
+            background-color: var(--base00);
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        pre {
+            border-radius: 8px;
+            overflow-x: auto;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            column-gap: 0;
+            background: var(--base01);
+            border: 2px solid var(--base03);
+        }
+
+        code {
+            border-radius: 0.25rem;
+            padding: 1rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            display: block;
+        }
+
+        .line-number {
+            color: var(--base03);
+            user-select: none;
+            padding-inline: 1rem;
+            text-align: right;
+            opacity: 0.5;
+            border-right: 1px solid var(--base03);
+            line-height: 1.5;
+        }
+
+        /* highlight.js */
+        pre code.hljs {
+          display: block;
+          overflow-x: auto;
+          padding: 0.5rem;
+        }
+        code.hljs {
+          padding: 3px 5px
+        }
+        .hljs {
+          color: var(--base05);
+          background: var(--base01);
+        }
+
+        .hljs::selection,
+        .hljs ::selection {
+          background-color: var(--base02);
+          color: var(--base05);
+        }
+
+        .hljs-comment {
+          color: var(--base03);
+        }
+
+        .hljs-tag {
+          color: var(--base04);
+        }
+
+        .hljs-subst,
+        .hljs-punctuation,
+        .hljs-operator {
+          color: var(--base05)
+        }
+        .hljs-operator {
+          opacity: 0.7
+        }
+
+        .hljs-bullet,
+        .hljs-variable,
+        .hljs-template-variable,
+        .hljs-selector-tag,
+        .hljs-name,
+        .hljs-deletion {
+          color: var(--base08);
+        }
+
+        .hljs-symbol,
+        .hljs-number,
+        .hljs-link,
+        .hljs-attr,
+        .hljs-variable.constant_,
+        .hljs-literal {
+          color: var(--base09)
+        }
+
+        .hljs-title,
+        .hljs-class .hljs-title,
+        .hljs-title.class_ {
+          color: var(--base0A)
+        }
+        .hljs-strong {
+          font-weight: bold;
+          color: var(--base0A)
+        }
+
+        .hljs-code,
+        .hljs-addition,
+        .hljs-title.class_.inherited__,
+        .hljs-string {
+          color: var(--base0B)
+        }
+
+        .hljs-built_in,
+        .hljs-doctag,
+        .hljs-quote,
+        .hljs-keyword.hljs-atrule,
+        .hljs-regexp {
+          color: var(--base0C)
+        }
+
+        .hljs-function .hljs-title,
+        .hljs-attribute,
+        .ruby .hljs-property,
+        .hljs-title.function_,
+        .hljs-section {
+          color: var(--base0D)
+        }
+
+        .hljs-type,
+        .hljs-template-tag,
+        .diff .hljs-meta,
+        .hljs-keyword {
+          color: var(--base0E)
+        }
+        .hljs-emphasis {
+          color: var(--base0E);
+          font-style: italic
+        }
+
+        .hljs-meta,
+        .hljs-meta .hljs-keyword,
+        .hljs-meta .hljs-string {
+          color: var(--base0F)
+        }
+
+        .hljs-meta .hljs-keyword,
+        .hljs-meta-keyword {
+          font-weight: bold
+        }
+    </style>
+</head>
+<body>
+    <pre><code class="language-python">print("Hello, World!")
+print("This is a code block with line numbers and syntax highlighting.")</code></pre>
+    <script>
+        hljs.highlightAll();
+
+        document.querySelectorAll('pre > code').forEach(codeBlock => {
+            const lines = codeBlock.textContent.split('\n');
+            const numberedLines = lines.map((line, index) =>
+                `<span class="line-number">${index + 1}</span> ${line}`
+            ).join('\n');
+            codeBlock.innerHTML = numberedLines;
+        });
+    </script>
+</body>
+</html>
