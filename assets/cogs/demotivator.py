@@ -3,9 +3,11 @@ import pathlib
 import random
 
 import discord
-from discord import app_commands
+from discord.ext import commands
+from httpx import AsyncClient
 from PIL import Image, ImageDraw, ImageFont
 
+from modules.embeds import send_error
 from modules.markovmemory import load_markov_model
 
 generated_sentences = set()
@@ -13,38 +15,9 @@ generated_sentences = set()
 
 def get_tnr(size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(
-        pathlib.Path(__file__).parent.parent / "fonts" / "timesnewroman.ttf", size,
+        pathlib.Path(__file__).parent.parent / "fonts" / "timesnewroman.ttf",
+        size,
     )
-
-
-@app_commands.command(
-    name="demotivator",
-    description="Generate a demotivator image from an attached or randomized image.",
-)
-async def demotivator(interaction: discord.Interaction, image: pathlib.Path) -> None:
-    if (
-        image
-        and asyncio.to_thread(image.is_file)
-        and image.suffix.lower()[1:] in ["jpg", "jpeg", "png", "gif", "webp"]
-    ):
-        await interaction.response.defer()
-        result = await gen(image)
-
-        if result:
-            await interaction.followup.send(file=discord.File(result))
-        else:
-            await interaction.followup.send("Failed to generate demotivator.")
-    else:
-        try:
-            img = random.choice(list((pathlib.Path(__file__).parent.parent / "images").glob("*.*")))  # noqa: S311
-            await interaction.response.defer()
-            result = await gen(img)
-            if result:
-                await interaction.followup.send(file=discord.File(result))
-            else:
-                await interaction.followup.send("Failed to generate demotivator.")
-        except Exception as e:
-            await interaction.response.send_message(f"Error: {e!s}", ephemeral=True)
 
 
 async def gen(
@@ -114,3 +87,52 @@ async def gen(
         attempt += 1
 
     return None
+
+
+class Demotivator(commands.Cog):
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
+        self.description = "🖼️|Generates a demotivator poster"
+
+    @commands.command()
+    async def demotivator(self, ctx: commands.Context) -> None:
+        if len(ctx.message.attachments) > 0:
+            img_url = ctx.message.attachments[0].url
+
+            if not img_url.lower().endswith((".jpg", ".jpeg", ".png", ".gif", ".webp")):
+                await send_error(
+                    ctx,
+                    description="Unsupported format. Please upload a JPG, PNG, GIF, or WEBP image.",
+                )
+                return
+
+            data = pathlib.Path(__file__).parent.parent.parent / "data" / "demotivator"
+            data.mkdir(parents=True, exist_ok=True)
+
+            async with AsyncClient(timeout=10) as client:
+                resp = await client.get(img_url)
+                img_path = data / f"{ctx.message.id}.{img_url.split('.')[-1]}"
+                img_path.write_bytes(resp.content)
+
+            result = await gen(img_path)
+
+            if result:
+                await ctx.send(file=discord.File(result))
+            else:
+                await ctx.send("Failed to generate demotivator.")
+        else:
+            try:
+                img = random.choice(  # noqa: S311
+                    list((pathlib.Path(__file__).parent.parent / "images").glob("*.*")),
+                )
+                result = await gen(img)
+                if result:
+                    await ctx.send(file=discord.File(result))
+                else:
+                    await ctx.send("Failed to generate demotivator.")
+            except Exception as e:
+                await ctx.send(f"Error: {e!s}")
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Demotivator(bot))
