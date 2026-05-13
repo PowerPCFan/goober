@@ -1,5 +1,6 @@
+import asyncio
 import logging
-import os
+from pathlib import Path
 from typing import Literal
 
 import discord
@@ -15,6 +16,8 @@ from modules.sync_connector import instance as synchub
 settings = settings_manager.settings
 
 logger = logging.getLogger("goober")
+
+memory_file = Path(settings.bot.active_memory)
 
 
 class BaseCommands(commands.Cog):
@@ -41,7 +44,8 @@ class BaseCommands(commands.Cog):
             display_name = getattr(cog, "name", cog_name)
             commands_list = command_categories.setdefault(display_name, [])
             category_descriptions.setdefault(
-                display_name, getattr(cog, "description", "No description"),
+                display_name,
+                getattr(cog, "description", "No description"),
             )
 
             for command in cog.get_commands():
@@ -111,11 +115,15 @@ class BaseCommands(commands.Cog):
 
     @commands.hybrid_command(description="View bot statistics and settings")
     async def stats(self, ctx: commands.Context) -> None:
-        memory_file: str = settings.bot.active_memory
-        file_size: int = os.path.getsize(memory_file)  # noqa: ASYNC240, PTH202
+        def _size() -> int:
+            return memory_file.stat().st_size
+        file_size: int = await asyncio.to_thread(_size)
 
-        with open(memory_file, "r") as file:  # noqa: ASYNC230, PTH123
-            line_count: int = sum(1 for _ in file)
+        def _lc() -> int:
+            with memory_file.open() as f:
+                return sum(1 for _ in f)
+
+        line_count: int = await asyncio.to_thread(_lc)
 
         embed: discord.Embed = discord.Embed(
             title="Bot stats",
@@ -131,7 +139,8 @@ class BaseCommands(commands.Cog):
         mem_used_by_process = psutil.Process().memory_info().rss / 1024**2
 
         embed.add_field(
-            name="Memory Usage", value=f"This bot is using {round(mem_used_by_process)} MB",
+            name="Memory Usage",
+            value=f"This bot is using {round(mem_used_by_process)} MB",
         )
 
         embed.add_field(
@@ -165,8 +174,11 @@ class BaseCommands(commands.Cog):
         if not settings.bot.allow_show_mem_command:
             return
 
-        with open(settings.bot.active_memory, "rb") as f:  # noqa: ASYNC230, PTH123
-            data: bytes = f.read()
+        def _data() -> bytes:
+            with memory_file.open("rb") as f:
+                return f.read()
+
+        data: bytes = await asyncio.to_thread(_data)
 
         if len(data) > (10 * 1024 * 1024):
             async with httpx.AsyncClient() as c:
@@ -178,8 +190,10 @@ class BaseCommands(commands.Cog):
 
             if response.status_code != 200:  # noqa: PLR2004
                 await send_error(
-                    ctx, description="Failed to upload memory file to catbox.moe. Try again later.",
+                    ctx,
+                    description="Failed to upload memory file to catbox.moe. Try again later.",
                 )
+                return
         else:
             await ctx.send(file=discord.File(data))
             return

@@ -21,8 +21,8 @@ from modules.markovmemory import (
     train_markov_model,
 )
 from modules.sentenceprocessing import (
-    append_mentions_to_18digit_integer,
     preprocess_message,
+    remove_mentions,
 )
 from modules.settings import ActivityType
 from modules.settings import instance as settings_manager
@@ -207,7 +207,7 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError) 
 
 # Event: Called on every message
 @bot.event
-async def on_message(message: discord.Message) -> None:  # noqa: C901
+async def on_message(message: discord.Message) -> None:
     global messages_recieved  # noqa: PLW0603
 
     messages_recieved += 1
@@ -229,7 +229,7 @@ async def on_message(message: discord.Message) -> None:  # noqa: C901
     if settings.bot.misc.block_profanity and profanity.contains_profanity(message.content):
         return
 
-    formatted_message: str = append_mentions_to_18digit_integer(message.content)
+    formatted_message: str = remove_mentions(message.content)
     cleaned_message: str = preprocess_message(formatted_message)
     if cleaned_message:
         memory.append(cleaned_message)
@@ -245,10 +245,7 @@ async def on_message(message: discord.Message) -> None:  # noqa: C901
             "timestamp": time.time(),
         }
         try:
-            if isinstance(memory, list):
-                memory.append({"_meta": message_metadata})
-            else:
-                logger.warning("Memory is not a list; can't append metadata")
+            memory.append({"_meta": message_metadata})
         except Exception as e:
             logger.warning(f"Failed to append metadata to memory: {e}")
 

@@ -1,5 +1,7 @@
+import asyncio
 import json
 import logging
+import pathlib
 import random
 import re
 import time
@@ -29,6 +31,8 @@ logger = logging.getLogger("goober")
 
 settings = settings_manager.settings
 
+bot_memory = pathlib.Path(settings.bot.active_memory)
+
 
 class Markov(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -48,13 +52,11 @@ class Markov(commands.Cog):
             ),
         )
 
-        if message_ref is None:
-            logger.error("Failed to send message!")
-            return
-
         try:
-            with open(settings.bot.active_memory, "r") as f:  # noqa: ASYNC230, PTH123
-                memory: list[str] = json.load(f)
+            def _read() -> list[str]:
+                with bot_memory.open("r") as f:
+                    return json.load(f)
+            memory: list[str] = await asyncio.to_thread(_read)
         except FileNotFoundError:
             await send_error(ctx, description="Memory file not found!")
             return
@@ -64,16 +66,13 @@ class Markov(commands.Cog):
 
         data_size: int = len(memory)
 
-        processing_message_ref: discord.Message | None = await ctx.send(
+        await message_ref.edit(
             embed=discord.Embed(
                 title="Processing Data",
                 description=f"Processing `{data_size}` data points...",
                 color=discord.Color.orange(),
             ),
         )
-
-        if processing_message_ref is None:
-            logger.error("Couldnt find message processing message!")
 
         start_time: float = time.time()
 
@@ -88,7 +87,7 @@ class Markov(commands.Cog):
 
         logger.debug(f"Completed retraining in {round(time.time() - start_time, 3)}s")
 
-        await processing_message_ref.edit(
+        await message_ref.edit(
             embed=discord.Embed(
                 title="Model Retrained",
                 description=f"Markov model retrained successfully using {data_size} data points!",

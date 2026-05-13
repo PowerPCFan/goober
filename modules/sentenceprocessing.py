@@ -62,14 +62,14 @@ def is_positive(sentence: str) -> bool:
     return sentiment_score > threshold
 
 
-def append_mentions_to_18digit_integer(message: str) -> str:
+def remove_mentions(message: str) -> str:
     pattern = r"\b\d{18}\b"
     return re.sub(pattern, lambda match: "", message)  # noqa: ARG005
 
 
 def preprocess_message(message: str) -> str:
     nlp_thread.join()
-    message = append_mentions_to_18digit_integer(message)
+    message = remove_mentions(message)
     if nlp is None:
         logger.error("NLP not loaded! Quitting")
         sys.exit(1)
