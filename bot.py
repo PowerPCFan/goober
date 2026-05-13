@@ -141,7 +141,6 @@ async def on_ready() -> None:
 
         logger.info(f"Synced {len(synced)} commands!")
         logger.info(f"{settings.name} has started! You're the star of the show now baby!")
-
     except discord.errors.Forbidden:
         logger.exception(
             "Permission error while syncing commands. "
