@@ -10,29 +10,31 @@ from modules.settings import instance as settings_manager
 
 
 class SongChanger(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.name = "Song Changer"
         self.description = "🎧|Changes the bot's 'Listening to' status"
 
     @requires_admin()
     @commands.hybrid_command(description="Change the bot's listening status to a song")
-    async def change_song(self, ctx: commands.Context, song: str):
+    async def change_song(self, ctx: commands.Context, song: str) -> None:
         await ctx.send(f"Changed song to {song}")
         try:
             await self.bot.change_presence(
-                activity=discord.Activity(type=discord.ActivityType.listening, name=f"{song}")
+                activity=discord.Activity(type=discord.ActivityType.listening, name=str(song)),
             )
             print(f"{GREEN}Changed song to {song}{RESET}")
         except Exception as e:
-            print(f"{RED}An error occurred while changing songs..: {str(e)}{RESET}")
+            print(f"{RED}An error occurred while changing songs..: {e!s}{RESET}")
 
     @requires_admin()
     @commands.hybrid_command(description="Change the bot's activity type and content")
-    async def change_activity(self, ctx: commands.Context, type: str | None, *, string: str):
+    async def change_activity(
+        self, ctx: commands.Context, type: str | None, *, string: str,  # noqa: A002
+    ) -> None:
         if type not in get_args(ActivityType):
             await ctx.send(
-                f"Type needs to be one of the following: {', '.join(get_args(ActivityType))}"
+                f"Type needs to be one of the following: {', '.join(get_args(ActivityType))}",
             )
             return
 
@@ -54,15 +56,15 @@ class SongChanger(commands.Cog):
         await self.bot.change_presence(
             activity=discord.Activity(
                 type=activities.get(
-                    settings_manager.settings.bot.misc.activity.type,  # type: ignore
+                    settings_manager.settings.bot.misc.activity.type,
                     discord.ActivityType.unknown,
                 ),
                 name=settings_manager.settings.bot.misc.activity.content,
-            )
+            ),
         )
 
         await ctx.send("Changed activity!")
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(SongChanger(bot))

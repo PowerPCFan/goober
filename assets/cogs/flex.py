@@ -77,23 +77,19 @@ def get_cpu_temp(temps: list["SensorGroup"]) -> shwtemp | None:
 def get_label(component: Component, raw: str) -> str:
     if isinstance(component, Component) and component != Component.UNKNOWN:
         return component.value
-    else:
-        return raw
+    return raw
 
 
 class Flex(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.description = "💪|Flex your machine!!"
 
     @user_install()
     @guild_install()
     @commands.hybrid_command(description="Flex your machine's specs and stats")
-    async def flex(self, ctx: commands.Context, show_all_sensors: str = ""):
-        if show_all_sensors.lower() == "all":
-            show_all_sensors_bool = True
-        else:
-            show_all_sensors_bool = False
+    async def flex(self, ctx: commands.Context, show_all_sensors: str = "") -> None:
+        show_all_sensors_bool = show_all_sensors.lower() == "all"
 
         os_name = platform.system() if platform.system() != "Darwin" else "macOS"
         os_ver = platform.release() if platform.system() != "Darwin" else platform.mac_ver()[0]
@@ -128,18 +124,22 @@ class Flex(commands.Cog):
         )
 
         embed.add_field(
-            name="CPU", value=f"{cpu_name} ({cores} cores {threads} threads)", inline=True
+            name="CPU",
+            value=f"{cpu_name} ({cores} cores {threads} threads)",
+            inline=True,
         )
         embed.add_field(name="CPU utilization", value=f"{cpu_utilization}%", inline=True)
         if cputemp:
             embed.add_field(
-                name="CPU Temperature", value=f"{round(cputemp.current)}°C", inline=True
+                name="CPU Temperature",
+                value=f"{round(cputemp.current)}°C",
+                inline=True,
             )
         else:
             add_empty(embed)
 
         embed.add_field(
-            name="Installed RAM", value=f"{round(mem.total / (1024**3), 2)} GB", inline=True
+            name="Installed RAM", value=f"{round(mem.total / (1024**3), 2)} GB", inline=True,
         )
         embed.add_field(
             name="Memory Usage",
@@ -175,7 +175,7 @@ class Flex(commands.Cog):
                         [
                             f"- {f'`{s.label}`: ' if s.label else ''}{round(s.current)}°C"
                             for s in sg.sensors
-                        ]
+                        ],
                     ),
                     inline=True,
                 )
@@ -183,5 +183,5 @@ class Flex(commands.Cog):
             await ctx.send(embed=temps_embed)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Flex(bot))

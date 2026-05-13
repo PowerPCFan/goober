@@ -33,12 +33,17 @@ target-version = "py311"
 
 select = ["ALL"]
 ignore = [
-    "UP015",      # Checks for redundant open modes
-    "INP001",     # Checks for missing __init__.py
-    "D",          # Docstring stuff
-    "BLE",        # Blind `except Exception` - i should probably get used to not doing this lol
-    "T201","T203",# Alerts when you use `print` statements
-    "G004"        # Alerts when you use an F-string in a logger call
+    "UP015",   # Checks for redundant open modes
+    "INP001",  # Checks for missing __init__.py
+    "D",       # Annoying docstring stuff
+    "BLE",     # Blind `except Exception` (i should probably get used to not doing this lol)
+    "T201",    # Alerts when you use `print` statements
+    "T203",
+    "G004",    # Alerts when you use an F-string in a logger call
+    "ERA",     # Checks for commented out code
+    "F821",    # Checks for undefined names - disable due to Pylance/Pyright reportUndefinedVariable overlap
+    "FBT001",  # Checks for boolean positional arguments stuff
+    "FBT002",
 ]
 
 fixable = ["ALL"]

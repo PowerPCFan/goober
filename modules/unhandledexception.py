@@ -1,3 +1,5 @@
+# ruff: noqa: ANN001
+
 import logging
 import sys
 import traceback
@@ -5,14 +7,13 @@ import traceback
 import discord
 from discord.ext.commands import Context
 
-from modules.sentenceprocessing import send_message
 from modules.settings import instance as settings_manager
 
 settings = settings_manager.settings
 logger = logging.getLogger("goober")
 
 
-def handle_exception(exc_type, exc_value, exc_traceback, *, context: str | None = None):
+def handle_exception(exc_type, exc_value, exc_traceback, *, context: str | None = None) -> None:
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
@@ -27,19 +28,19 @@ def handle_exception(exc_type, exc_value, exc_traceback, *, context: str | None 
 
 
 async def handle_exception_with_context(
-    ctx: Context, exc_type, exc_value, exc_traceback, *, context: str | None = None
-):
+    ctx: Context, exc_type, exc_value, exc_traceback, *, context: str | None = None,
+) -> None:
     handle_exception(exc_type, exc_value, exc_traceback, context=context)
 
     exception_class = repr(exc_type).replace("<class '", "").replace("'>", "")
 
     embed = discord.Embed(
         title="Command failed",
-        description=f"`{exception_class}: {str(exc_value)}`",
+        description=f"`{exception_class}: {exc_value!s}`",
         color=discord.Color.red(),
     )
 
     embed.set_footer(text="Bot Admin: Please check logs for more information")
     # embed.description = "```" + "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))[-4000:] + "```"  # noqa: E501
 
-    await send_message(ctx, embed=embed)
+    await ctx.send(embed=embed)

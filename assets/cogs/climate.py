@@ -1,15 +1,14 @@
+# fmt: off
+
 import datetime
 import logging
 import math
 from typing import TypedDict
 
 import discord
-import discord.ext
-import discord.ext.commands
 import httpx
 from discord.ext import commands
 
-from modules.sentenceprocessing import send_message
 from modules.settings import instance as settings_manager
 
 
@@ -20,7 +19,7 @@ class SettingsType(TypedDict):
 
 default_settings: SettingsType = {
     "latitude": 30,
-    "longitude": 0
+    "longitude": 0,
 }
 
 
@@ -32,279 +31,279 @@ class ThresholdValue(TypedDict):
 CO2_THRESHOLDS: dict[int, ThresholdValue] = {
     300: {
         "label": "Great",
-        "emoji": "🔵"
+        "emoji": "🔵",
     },
     600: {
         "label": "Good",
-        "emoji": "🟢"
+        "emoji": "🟢",
     },
     900: {
         "label": "OK",
-        "emoji": "🟡"
+        "emoji": "🟡",
     },
     1100: {
         "label": "Suboptimal",
-        "emoji": "🟠"
+        "emoji": "🟠",
     },
     1300: {
         "label": "Bad",
-        "emoji": "🔴"
+        "emoji": "🔴",
     },
     1800: {
         "label": "Very bad",
-        "emoji": "🟣"
-    }
+        "emoji": "🟣",
+    },
 }
 
 INDOOR_TEMP_THRESHOLDS: dict[int, ThresholdValue] = {
     64: {
-        'label': 'Cold',
-        'emoji': '🔵'
+        "label": "Cold",
+        "emoji": "🔵",
     },
     67: {
-        'label': 'Optimal',
-        'emoji': '🟢'
+        "label": "Optimal",
+        "emoji": "🟢",
     },
     73: {
-        'label': 'Warm',
-        'emoji': '🟡'
+        "label": "Warm",
+        "emoji": "🟡",
     },
     76: {
-        'label': 'Hot',
-        'emoji': '🔴'
-    }
+        "label": "Hot",
+        "emoji": "🔴",
+    },
 }
 
 HUMIDITY_THRESHOLDS: dict[int, ThresholdValue] = {
     0: {
         "label": "Extremely dry",
-        "emoji": "🔴"
+        "emoji": "🔴",
     },
     20: {
         "label": "Too dry",
-        "emoji": "🟡"
+        "emoji": "🟡",
     },
     35: {
         "label": "Optimal",
-        "emoji": "🟢"
+        "emoji": "🟢",
     },
     60: {
         "label": "Too damp",
-        "emoji": "🟡"
+        "emoji": "🟡",
     },
     80: {
         "label": "Extremely damp",
-        "emoji": "🔴"
-    }
+        "emoji": "🔴",
+    },
 }
 
 RESISTANCE_THRESHOLDS: dict[int, ThresholdValue] = {
     10: {
         "label": "Very Bad",
-        "emoji": "🔴"
+        "emoji": "🔴",
     },
     50: {
         "label": "Poor",
-        "emoji": "🟠"
+        "emoji": "🟠",
     },
     150: {
         "label": "OK",
-        "emoji": "🟡"
+        "emoji": "🟡",
     },
     300: {
         "label": "Good",
-        "emoji": "🟢"
+        "emoji": "🟢",
     },
     1000: {
         "label": "Excellent",
-        "emoji": "🔵"
-    }
+        "emoji": "🔵",
+    },
 }
 
 PM25_THRESHOLDS: dict[int, ThresholdValue] = {
     0: {
         "label": "Excellent",
-        "emoji": "🔵"
+        "emoji": "🔵",
     },
     6: {
         "label": "Good",
-        "emoji": "🟢"
+        "emoji": "🟢",
     },
     12: {
         "label": "OK",
-        "emoji": "🟡"
+        "emoji": "🟡",
     },
     35: {
         "label": "Unhealthy",
-        "emoji": "🔴"
+        "emoji": "🔴",
     },
     60: {
         "label": "Very unhealthy",
-        "emoji": "🟣"
-    }
+        "emoji": "🟣",
+    },
 }
 
 PM100_THRESHOLDS: dict[int, ThresholdValue] = {
     0: {
         "label": "Excellent",
-        "emoji": "🔵"
+        "emoji": "🔵",
     },
     12: {
         "label": "Good",
-        "emoji": "🟢"
+        "emoji": "🟢",
     },
     24: {
         "label": "OK",
-        "emoji": "🟡"
+        "emoji": "🟡",
     },
     75: {
         "label": "Unhealthy",
-        "emoji": "🔴"
+        "emoji": "🔴",
     },
     120: {
         "label": "Very unhealthy",
-        "emoji": "🟣"
-    }
+        "emoji": "🟣",
+    },
 }
 
 OUTDOOR_TEMP_THRESHOLDS: dict[int, ThresholdValue] = {
     -10: {
         "label": "Extremely frigid",
-        "emoji": "⚫"
+        "emoji": "⚫",
     },
     5: {
         "label": "Very frigid",
-        "emoji": "🟣"
+        "emoji": "🟣",
     },
     20: {
         "label": "Very cold",
-        "emoji": "🔵"
+        "emoji": "🔵",
     },
     32: {
         "label": "Cold",
-        "emoji": "🔵"
+        "emoji": "🔵",
     },
     40: {
         "label": "Mildly cold",
-        "emoji": "🔵"
+        "emoji": "🔵",
     },
     45: {
         "label": "Cool",
-        "emoji": "⚪"
+        "emoji": "⚪",
     },
     50: {
         "label": "Brisk",
-        "emoji": "🟢"
+        "emoji": "🟢",
     },
     60: {
         "label": "Mild",
-        "emoji": "🟢"
+        "emoji": "🟢",
     },
     70: {
         "label": "Warm",
-        "emoji": "🟡"
+        "emoji": "🟡",
     },
     75: {
         "label": "Very warm",
-        "emoji": "🟡"
+        "emoji": "🟡",
     },
     80: {
         "label": "Hot",
-        "emoji": "🟠"
+        "emoji": "🟠",
     },
     85: {
         "label": "Very hot",
-        "emoji": "🔴"
+        "emoji": "🔴",
     },
     90: {
         "label": "Extremely hot",
-        "emoji": "🟣"
-    }
+        "emoji": "🟣",
+    },
 }
 
 OUTDOOR_HUMIDITY_THRESHOLDS: dict[int, ThresholdValue] = {
     0: {
         "label": "Extremely dry",
-        "emoji": "🟠"
+        "emoji": "🟠",
     },
     15: {
         "label": "Very dry",
-        "emoji": "🟠"
+        "emoji": "🟠",
     },
     30: {
         "label": "Dry",
-        "emoji": "🟡"
+        "emoji": "🟡",
     },
     50: {
         "label": "Comfortable",
-        "emoji": "🟢"
+        "emoji": "🟢",
     },
     65: {
         "label": "Slightly humid",
-        "emoji": "🟢"
+        "emoji": "🟢",
     },
     75: {
         "label": "Humid",
-        "emoji": "🔵"
+        "emoji": "🔵",
     },
     85: {
         "label": "Very humid",
-        "emoji": "🔵"
+        "emoji": "🔵",
     },
     95: {
         "label": "Extremely humid",
-        "emoji": "🟣"
-    }
+        "emoji": "🟣",
+    },
 }
 
 SUN_POSITION_THRESHOLD: dict[int, ThresholdValue] = {
     -100: {
         "label": "Night",
-        "emoji": "🌌"
+        "emoji": "🌌",
     },
     -18: {
         "label": "Astronomical twilight",
-        "emoji": "🌙"
+        "emoji": "🌙",
     },
     -12: {
         "label": "Nautical twilight",
-        "emoji": "⭐"
+        "emoji": "⭐",
     },
     -6: {
         "label": "Civil twilight",
-        "emoji": "🌃"
+        "emoji": "🌃",
     },
     -2: {
         "label": "Sunrise or -set",
-        "emoji": "🌅"
+        "emoji": "🌅",
     },
     2: {
         "label": "Day",
-        "emoji": "☀️"
-    }
+        "emoji": "☀️",
+    },
 }
 
 PRESSURE_THRESHOLDS: dict[int, ThresholdValue] = {
     980: {
         "label": "Stormy",
-        "emoji": "🟠"
+        "emoji": "🟠",
     },
     995: {
         "label": "Fair",
-        "emoji": "🟡"
+        "emoji": "🟡",
     },
     1005: {
         "label": "Normal",
-        "emoji": "🟢"
+        "emoji": "🟢",
     },
     1015: {
         "label": "Clear",
-        "emoji": "🔵"
+        "emoji": "🔵",
     },
     1030: {
         "label": "Very high",
-        "emoji": "🟣"
-    }
+        "emoji": "🟣",
+    },
 }
 
 logger = logging.getLogger("goober")
@@ -326,18 +325,18 @@ class Indoor(TypedDict):
 
 
 class Climate(commands.Cog):
-    def __init__(self, bot: discord.ext.commands.Bot):
-        self.bot: discord.ext.commands.Bot = bot
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot: commands.Bot = bot
         self.description = "🌱|Monitor my indoor and outdoor climates"
 
     def get_ranking(
         self,
         current_value: float,
-        thresholds: dict[int, ThresholdValue]
+        thresholds: dict[int, ThresholdValue],
     ) -> ThresholdValue:
         found_threshold: ThresholdValue = {
             "emoji": "",
-            "label": ""
+            "label": "",
         }
 
         for value, threshold in sorted(thresholds.items(), key=lambda item: item[0]):
@@ -353,7 +352,7 @@ class Climate(commands.Cog):
         label: str,
         unit: str,
         value: float,
-        threshold: dict[int, ThresholdValue] | None = None
+        threshold: dict[int, ThresholdValue] | None = None,
     ) -> dict:
         if unit and unit.startswith("-"):
             sep = ""
@@ -372,14 +371,14 @@ class Climate(commands.Cog):
         return {"name": name, "value": val}
 
     def get_sun_angle(self) -> float:
-        settings: SettingsType = settings_manager.get_plugin_settings("climate", default_settings)  # type: ignore
+        settings: SettingsType = settings_manager.get_plugin_settings("climate", default_settings)  # pyright: ignore[reportAssignmentType]
 
-        now = datetime.datetime.now()
+        now = datetime.datetime.now()  # noqa: DTZ005
         hour = now.hour + now.minute / 60 + now.second / 3600
         solar_hour = hour + (settings["longitude"] + 60) / 15  # +60 for UTC-4 timezone
-        nth_day_of_year = (now - datetime.datetime(now.year, 1, 1)).days + 1
+        nth_day_of_year = (now - datetime.datetime(now.year, 1, 1)).days + 1  # noqa: DTZ001
         declination = math.radians(
-            23.445 * math.sin(math.radians((360 / 365.25) * (nth_day_of_year - 81)))
+            23.445 * math.sin(math.radians((360 / 365.25) * (nth_day_of_year - 81))),
         )
         hour_angle = math.radians(15 * (solar_hour - 12))
 
@@ -388,7 +387,7 @@ class Climate(commands.Cog):
             * math.sin(math.radians(settings["latitude"]))
             + math.cos(declination)
             * math.cos(math.radians(settings["latitude"]))
-            * math.cos(hour_angle)
+            * math.cos(hour_angle),
         ))
 
         if result > -1.0:
@@ -398,14 +397,14 @@ class Climate(commands.Cog):
         return result
 
     @commands.hybrid_command(description="Get indoor climate data")
-    async def indoors(self, ctx: commands.Context):
+    async def indoors(self, ctx: commands.Context) -> None:
         async with httpx.AsyncClient() as client:
             data: Indoor = (await client.get("http://192.168.1.45:8080/latest/indoor")).json()
 
         embed = discord.Embed(
             title="Climate data",
             description="Information about my indoor climate",
-            color=discord.Color.blue()
+            color=discord.Color.blue(),
         )
 
         isotime = str(data.get("time", "1970-01-01T00:00:00+00:00"))
@@ -416,20 +415,19 @@ class Climate(commands.Cog):
 
         embed.add_field(**self.format_embed("Temperature", "-°F", (data["temperature"] * (9 / 5)) + 32, INDOOR_TEMP_THRESHOLDS))  # noqa: E501
         embed.add_field(**self.format_embed("Humidity", "-% RH", data["humidity"], HUMIDITY_THRESHOLDS))  # noqa: E501
-        embed.add_field(**self.format_embed("Pressure", "hPa", data['pressure'], PRESSURE_THRESHOLDS))  # noqa: E501
+        embed.add_field(**self.format_embed("Pressure", "hPa", data["pressure"], PRESSURE_THRESHOLDS))  # noqa: E501
 
-        embed.add_field(**self.format_embed("Gas", "kΩ", data['gas'], RESISTANCE_THRESHOLDS))
-        embed.add_field(**self.format_embed("CO2", "PPM", data['carbon_dioxide'], CO2_THRESHOLDS))
-        embed.add_field(**self.format_embed("VOCs", "VOC Index", data['vocs']))
+        embed.add_field(**self.format_embed("Gas", "kΩ", data["gas"], RESISTANCE_THRESHOLDS))
+        embed.add_field(**self.format_embed("CO2", "PPM", data["carbon_dioxide"], CO2_THRESHOLDS))
+        embed.add_field(**self.format_embed("VOCs", "VOC Index", data["vocs"]))
 
-        embed.add_field(**self.format_embed("PM1.0", "µg/m³", data['pm1_0']))
-        embed.add_field(**self.format_embed("PM2.5", "µg/m³", data['pm2_5'], PM25_THRESHOLDS))
-        embed.add_field(**self.format_embed("PM10.0", "µg/m³", data['pm10_0'], PM100_THRESHOLDS))
+        embed.add_field(**self.format_embed("PM1.0", "µg/m³", data["pm1_0"]))
+        embed.add_field(**self.format_embed("PM2.5", "µg/m³", data["pm2_5"], PM25_THRESHOLDS))
+        embed.add_field(**self.format_embed("PM10.0", "µg/m³", data["pm10_0"], PM100_THRESHOLDS))
 
+        embed.timestamp = datetime.datetime.fromtimestamp(timestamp)  # noqa: DTZ006
 
-        embed.timestamp = datetime.datetime.fromtimestamp(timestamp)
-
-        await send_message(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
 
 async def setup(bot: commands.Bot) -> None:

@@ -1,10 +1,10 @@
 import json
 import logging
 import pickle
+from pathlib import Path
 
 import markovify
 
-from modules.globalvars import RESET
 from modules.settings import instance as settings_manager
 
 settings = settings_manager.settings
@@ -13,27 +13,33 @@ model: markovify.NewlineText | None = None
 
 logger = logging.getLogger("goober")
 
+active_mem = Path(settings.bot.active_memory)
+active_model = Path(settings.bot.active_model)
 
-def load_memory():
+
+def load_memory() -> list:
     data = []
 
     try:
-        with open(settings.bot.active_memory, "r") as f:
+        with active_mem.open() as f:
             data = json.load(f)
     except FileNotFoundError:
-        with open(settings.bot.active_memory, "w") as f:
+        with active_mem.open("w") as f:
             json.dump([], f)
             data = []
 
     return data
 
 
-def save_memory(memory):
-    with open(settings.bot.active_memory, "w") as f:
+def save_memory(memory: list) -> None:
+    with active_mem.open("w") as f:
         json.dump(memory, f, indent=4)
 
 
-def train_markov_model(memory, additional_data=None) -> markovify.NewlineText | None:
+def train_markov_model(
+    memory: list,
+    additional_data: list | None = None,
+) -> markovify.NewlineText | None:
     if not memory:
         return None
 
@@ -45,29 +51,25 @@ def train_markov_model(memory, additional_data=None) -> markovify.NewlineText | 
         return None
 
     text = "\n".join(filtered_memory)
-    model = markovify.NewlineText(text, state_size=2)
-    return model
+    return markovify.NewlineText(text, state_size=2)
 
 
-def save_markov_model(model):
-    filename = settings.bot.active_model
-
-    with open(filename, "wb") as f:
+def save_markov_model(model: markovify.NewlineText | None) -> None:
+    with active_model.open("wb") as f:
         pickle.dump(model, f)
-    logger.info(f"Markov model saved to {filename}.")
+    logger.info(f"Markov model saved to {active_model}.")
 
 
-def load_markov_model():
-    global model
-    filename = settings.bot.active_model
+def load_markov_model() -> markovify.NewlineText | None:
+    global model  # noqa: PLW0603
 
     if not model:
         try:
-            with open(filename, "rb") as f:
-                model = pickle.load(f)
-            logger.info(f"Markov model loaded from {filename}.{RESET}")
+            with active_model.open("rb") as f:
+                model = pickle.load(f)  # noqa: S301
+            logger.info(f"Markov model loaded from {active_model}.")
         except FileNotFoundError:
-            logger.error(f"{filename} is not found!{RESET}")
+            logger.exception(f"{active_model} is not found!")
             return None
 
     return model

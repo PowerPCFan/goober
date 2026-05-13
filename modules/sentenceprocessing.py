@@ -1,9 +1,8 @@
 import logging
 import re
+import sys
 import threading
 
-import discord
-import discord.ext.commands
 import spacy
 from spacy.tokens import Doc
 
@@ -13,26 +12,26 @@ logger = logging.getLogger("goober")
 nlp: spacy.language.Language | None = None
 
 
-def check_resources():
-    global nlp
+def check_resources() -> None:
+    global nlp  # noqa: PLW0603
 
     try:
         nlp = spacy.load("en_core_web_sm")
     except OSError:
-        logging.critical("The spaCy model was not found! Downloading it....`")
-        spacy.cli.download("en_core_web_sm")  # type: ignore
+        logger.critical("The spaCy model was not found! Downloading it....`")
+        spacy.cli.download("en_core_web_sm")  # pyright: ignore[reportAttributeAccessIssue]
         nlp = spacy.load("en_core_web_sm")
     try:
-        from spacytextblob.spacytextblob import SpacyTextBlob  # noqa: F401
-    except Exception as exc:
-        logger.error("spacytextblob is not available: %s", exc)
+        from spacytextblob.spacytextblob import SpacyTextBlob  # noqa: F401, PLC0415
+    except Exception:
+        logger.exception("spacytextblob is not available")
         return
 
     if "spacytextblob" not in nlp.pipe_names:
         try:
             nlp.add_pipe("spacytextblob")
-        except ValueError as exc:
-            logger.error("Failed to add spacytextblob: %s", exc)
+        except ValueError:
+            logger.exception("Failed to add spacytextblob")
             return
 
     if not Doc.has_extension("polarity"):
@@ -45,73 +44,44 @@ nlp_thread = threading.Thread(target=check_resources)
 nlp_thread.start()
 
 
-def is_positive(sentence):
+def is_positive(sentence: str) -> bool:
     nlp_thread.join()
 
     if nlp is None:
         logger.error("NLP Not loaded! Defaulting to positivity 0")
-        return 0
+        return False
 
     doc = nlp(sentence)
-    sentiment_score = doc._.polarity  # from spacytextblob
+    sentiment_score = doc._.polarity
 
     debug_message = f"Positivity of sentence is: {sentiment_score}{RESET}"
     logger.debug(debug_message)
 
-    return sentiment_score > 0.6
+    threshold = 0.6
+
+    return sentiment_score > threshold
 
 
-async def send_message(
-    ctx: discord.ext.commands.Context,
-    message: str | None = None,
-    embed: discord.Embed | None = None,
-    file: discord.File | None = None,
-    edit: bool = False,
-    edit_message_reference: discord.Message | None = None,
-) -> discord.Message | None:
-
-    sent_message: discord.Message | None = None
-
-    if edit and edit_message_reference:
-        try:
-            await edit_message_reference.edit(content=message, embed=embed)
-            return edit_message_reference
-        except Exception as e:
-            await ctx.send(f"Failed to edit message: {e}")
-            return None
-
-    if embed:
-        sent_message = await ctx.send(embed=embed, content=message)
-    elif file:
-        sent_message = await ctx.send(file=file, content=message)
-    else:
-        sent_message = await ctx.send(content=message)
-
-    return sent_message
-
-
-def append_mentions_to_18digit_integer(message):
+def append_mentions_to_18digit_integer(message: str) -> str:
     pattern = r"\b\d{18}\b"
-    return re.sub(pattern, lambda match: "", message)
+    return re.sub(pattern, lambda match: "", message)  # noqa: ARG005
 
 
-def preprocess_message(message):
+def preprocess_message(message: str) -> str:
     nlp_thread.join()
     message = append_mentions_to_18digit_integer(message)
     if nlp is None:
-        logger.error("NLP Not loaded! Quitting")
-        quit(1)
+        logger.error("NLP not loaded! Quitting")
+        sys.exit(1)
 
     doc = nlp(message)
     tokens = [token.text for token in doc if token.is_alpha or token.is_digit]
     return " ".join(tokens)
 
 
-def improve_sentence_coherence(sentence):
+def improve_sentence_coherence(sentence: str) -> str:
     return re.sub(r"\bi\b", "I", sentence)
 
 
-def rephrase_for_coherence(sentence):
-    words = sentence.split()
-    coherent_sentence = " ".join(words)
-    return coherent_sentence
+def rephrase_for_coherence(sentence: str) -> str:
+    return " ".join(sentence.split())

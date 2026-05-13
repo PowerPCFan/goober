@@ -32,7 +32,7 @@ logger = logging.getLogger("goober")
 logger.setLevel(logging.DEBUG)
 
 level_name = settings_manager.settings.bot.log_level.upper()
-console_level = logging._nameToLevel.get(level_name, logging.INFO)
+console_level = logging._nameToLevel.get(level_name, logging.INFO)  # noqa: SLF001
 
 console_handler = logging.StreamHandler()
 console_handler.setLevel(console_level)
@@ -63,8 +63,8 @@ tracemalloc.start()
 class MessageMetadata(TypedDict):
     user_id: str
     user_name: str
-    guild_id: str | Literal["DM"]
-    guild_name: str | Literal["DM"]
+    guild_id: str
+    guild_name: str
     channel_id: str
     channel_name: str
     message: str
@@ -84,7 +84,7 @@ intents.presences = True
 intents.members = True
 
 bot: commands.Bot = commands.Bot(
-    command_prefix=settings.bot.prefix, intents=intents, help_command=None
+    command_prefix=settings.bot.prefix, intents=intents, help_command=None,
 )
 
 # Load memory and Markov model for text generation
@@ -103,8 +103,13 @@ generated_sentences: set[str] = set()
 used_words: set[str] = set()
 
 
-async def load_cogs_from_folder(bot: commands.Bot, folder_name: str, internal: bool = False):
-    for filename in [file for file in os.listdir(folder_name) if file.endswith(".py")]:
+async def load_cogs_from_folder(
+    bot: commands.Bot,
+    folder_name: str,
+    *,
+    internal: bool = False,
+) -> None:
+    for filename in [file for file in os.listdir(folder_name) if file.endswith(".py")]:  # noqa: PTH208
         cog_name: str = filename[:-3]
 
         if not internal and cog_name in settings.bot.disabled_cogs:
@@ -116,15 +121,14 @@ async def load_cogs_from_folder(bot: commands.Bot, folder_name: str, internal: b
         try:
             await bot.load_extension(module_path)
             logger.info(f"Loaded cog: {cog_name}")
-        except Exception as e:
-            logger.error(f"Failed to load cog: {cog_name} {e}")
-            traceback.print_exc()
+        except Exception:
+            logger.exception(f"Failed to load cog {cog_name}:")
 
 
 # Event: Called when the bot is ready
 @bot.event
 async def on_ready() -> None:
-    global launched
+    global launched  # noqa: PLW0603
 
     if launched:
         return
@@ -138,14 +142,14 @@ async def on_ready() -> None:
         logger.info(f"Synced {len(synced)} commands!")
         logger.info(f"{settings.name} has started! You're the star of the show now baby!")
 
-    except discord.errors.Forbidden as perm_error:
-        logger.error(f"Permission error while syncing commands: {perm_error}")
-        logger.error(
+    except discord.errors.Forbidden:
+        logger.exception(
+            "Permission error while syncing commands. "
             "Make sure the bot has the 'applications.commands' scope "
-            "and is invited with the correct permissions."
+            "and is invited with the correct permissions. Traceback:",
         )
-    except Exception as e:
-        logger.error(f"Failed to sync commands: {e}")
+    except Exception:
+        logger.exception("Failed to sync commands.")
         traceback.print_exc()
 
     if not settings.bot.misc.activity.content:
@@ -166,7 +170,7 @@ async def on_ready() -> None:
                 discord.ActivityType.unknown,
             ),
             name=settings.bot.misc.activity.content,
-        )
+        ),
     )
     launched = True
 
@@ -203,8 +207,8 @@ async def on_command_error(ctx: commands.Context, error: commands.CommandError) 
 
 # Event: Called on every message
 @bot.event
-async def on_message(message: discord.Message) -> None:
-    global memory, markov_model, messages_recieved
+async def on_message(message: discord.Message) -> None:  # noqa: C901
+    global messages_recieved  # noqa: PLW0603
 
     messages_recieved += 1
 
@@ -260,15 +264,15 @@ async def on_message(message: discord.Message) -> None:
 @bot.event
 async def on_interaction(interaction: discord.Interaction) -> None:
     logger.info(
-        f"@{interaction.user.name} ran '{interaction.command.name if interaction.command else 'unknown command'}' in #{interaction.channel.name if interaction.channel and not isinstance(interaction.channel, discord.DMChannel) else ('DM' if isinstance(interaction.channel, discord.DMChannel) else 'Unknown Channel')} ({interaction.guild.name if interaction.guild else 'Unknown Guild / DM'})"  # noqa: E501
-    )  # noqa: E501
+        f"@{interaction.user.name} ran '{interaction.command.name if interaction.command else 'unknown command'}' in #{interaction.channel.name if interaction.channel and not isinstance(interaction.channel, discord.DMChannel) else ('DM' if isinstance(interaction.channel, discord.DMChannel) else 'Unknown Channel')} ({interaction.guild.name if interaction.guild else 'Unknown Guild / DM'})",  # noqa: E501
+    )
 
 
 @bot.event
 async def on_command(ctx: commands.Context) -> None:
     logger.info(
-        f"@{ctx.author.name} ran '{ctx.command.name if ctx.command else 'unknown command'}' in #{ctx.channel.name if ctx.channel and not isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)) else ('DM' if isinstance(ctx.channel, discord.DMChannel) else 'Unknown Channel')} ({ctx.guild.name if ctx.guild else 'Unknown Guild / DM'})"  # noqa: E501
-    )  # noqa: E501
+        f"@{ctx.author.name} ran '{ctx.command.name if ctx.command else 'unknown command'}' in #{ctx.channel.name if ctx.channel and not isinstance(ctx.channel, (discord.DMChannel, discord.PartialMessageable)) else ('DM' if isinstance(ctx.channel, discord.DMChannel) else 'Unknown Channel')} ({ctx.guild.name if ctx.guild else 'Unknown Guild / DM'})",  # noqa: E501
+    )
 
 
 # Global check: Block blacklisted users from running commands
@@ -294,8 +298,7 @@ async def block_blacklisted(ctx: commands.Context) -> bool:
 # Helper: Improve sentence coherence (simple capitalization fix)
 def improve_sentence_coherence(sentence: str) -> str:
     # Capitalizes "i" to "I" in the sentence
-    sentence = sentence.replace(" i ", " I ")
-    return sentence
+    return sentence.replace(" i ", " I ")
 
 
 # Start the bot

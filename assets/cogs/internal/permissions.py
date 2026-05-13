@@ -8,23 +8,23 @@ settings = settings_manager.settings
 
 
 class PermissionManager(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.name = "Permission Manager"
         self.description = "🔐 | Commands for managing bot permissions"
 
     @requires_admin()
     @commands.hybrid_command(description="Add a user as a bot owner")
-    async def add_owner(self, ctx: commands.Context, member: discord.Member):
+    async def add_owner(self, ctx: commands.Context, member: discord.Member) -> None:
         settings.bot.owner_ids.append(member.id)
         settings_manager.add_admin_log_event(
             {
                 "action": "add",
                 "author": ctx.author.id,
                 "change": "owner_ids",
-                "messageId": ctx.message.id,
+                "message_id": ctx.message.id,
                 "target": member.id,
-            }
+            },
         )
 
         settings_manager.commit()
@@ -39,7 +39,7 @@ class PermissionManager(commands.Cog):
 
     @requires_admin()
     @commands.hybrid_command(description="Remove a user from bot owner privileges")
-    async def remove_owner(self, ctx: commands.Context, member: discord.Member):
+    async def remove_owner(self, ctx: commands.Context, member: discord.Member) -> None:
         try:
             settings.bot.owner_ids.remove(member.id)
             settings_manager.add_admin_log_event(
@@ -47,9 +47,9 @@ class PermissionManager(commands.Cog):
                     "action": "del",
                     "author": ctx.author.id,
                     "change": "owner_ids",
-                    "messageId": ctx.message.id,
+                    "message_id": ctx.message.id,
                     "target": member.id,
-                }
+                },
             )
             settings_manager.commit()
         except ValueError:
@@ -66,16 +66,16 @@ class PermissionManager(commands.Cog):
 
     @requires_admin()
     @commands.hybrid_command(description="Blacklist a user from using the bot")
-    async def blacklist_user(self, ctx: commands.Context, member: discord.Member):
+    async def blacklist_user(self, ctx: commands.Context, member: discord.Member) -> None:
         settings.bot.blacklisted_users.append(member.id)
         settings_manager.add_admin_log_event(
             {
                 "action": "add",
                 "author": ctx.author.id,
                 "change": "blacklisted_users",
-                "messageId": ctx.message.id,
+                "message_id": ctx.message.id,
                 "target": member.id,
-            }
+            },
         )
         settings_manager.commit()
 
@@ -89,7 +89,7 @@ class PermissionManager(commands.Cog):
 
     @requires_admin()
     @commands.hybrid_command(description="Unblacklist a user to allow them to use the bot")
-    async def unblacklist_user(self, ctx: commands.Context, member: discord.Member):
+    async def unblacklist_user(self, ctx: commands.Context, member: discord.Member) -> None:
         try:
             settings.bot.blacklisted_users.remove(member.id)
             settings_manager.add_admin_log_event(
@@ -97,9 +97,9 @@ class PermissionManager(commands.Cog):
                     "action": "del",
                     "author": ctx.author.id,
                     "change": "blacklisted_users",
-                    "messageId": ctx.message.id,
+                    "message_id": ctx.message.id,
                     "target": member.id,
-                }
+                },
             )
             settings_manager.commit()
 
@@ -116,5 +116,5 @@ class PermissionManager(commands.Cog):
         await ctx.send(embed=embed)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(PermissionManager(bot))

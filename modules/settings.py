@@ -1,9 +1,10 @@
-import json
-import pathlib
-from dataclasses import dataclass, asdict
-from typing import Literal, Mapping, Any
-import logging
 import copy
+import json
+import logging
+import pathlib
+from collections.abc import Mapping
+from dataclasses import asdict, dataclass
+from typing import Any, Literal
 
 logger = logging.getLogger("goober")
 
@@ -55,7 +56,7 @@ class SettingsType:
 
 @dataclass
 class AdminLogEvent:
-    messageId: int
+    message_id: int
     author: int
     target: str | int
     action: Literal["del", "add", "set"]
@@ -83,7 +84,7 @@ def _build_settings(data: Mapping[str, Any]) -> SettingsType:
         disabled_cogs=list(bot_data["disabled_cogs"]),
         active_memory=str(bot_data["active_memory"]),
         active_model=str(bot_data["active_model"]),
-        sync_hub=SyncHub(**bot_data["sync_hub"])
+        sync_hub=SyncHub(**bot_data["sync_hub"]),
     )
 
     return SettingsType(
@@ -95,7 +96,7 @@ def _build_settings(data: Mapping[str, Any]) -> SettingsType:
 
 class Settings:
     def __init__(self) -> None:
-        global instance
+        global instance  # noqa: PLW0603
         instance = self
 
         self.settings_dir: pathlib.Path = pathlib.Path(__file__).parent.parent / "settings"
@@ -103,29 +104,27 @@ class Settings:
         self.log_path: pathlib.Path = self.settings_dir / "admin_logs.json"
 
         if not self.path.exists():
-            logger.critical(
-                f"Missing settings file from {self.path}! Did you forget to copy settings.example.json?"
-            )
-            raise ValueError("settings.json file does not exist!")
+            logger.critical(f"Missing settings file from {self.path}!")
+            raise ValueError("settings.json file does not exist!")  # noqa: EM101, TRY003
 
         self.settings: SettingsType
         self.original_settings: SettingsType
 
-        with open(self.path, "r", encoding="utf-8") as f:
+        with self.path.open(encoding="utf-8") as f:
             self.__kv_store: dict = json.load(f)
 
         self.settings = _build_settings(self.__kv_store)
         self.original_settings = copy.deepcopy(self.settings)
 
     def reload_settings(self) -> None:
-        with open(self.path, "r", encoding="utf-8") as f:
+        with self.path.open(encoding="utf-8") as f:
             self.__kv_store: dict = json.load(f)
 
         self.settings = _build_settings(self.__kv_store)
         self.original_settings = copy.deepcopy(self.settings)
 
     def commit(self) -> None:
-        with open(self.path, "w", encoding="utf-8") as f:
+        with self.path.open("w", encoding="utf-8") as f:
             json.dump(asdict(self.settings), f, ensure_ascii=False, indent=4)
 
         self.original_settings = self.settings
@@ -134,24 +133,24 @@ class Settings:
         self.settings = self.original_settings
 
     def get_plugin_settings(
-        self, plugin_name: str, default: Mapping[Any, Any]
+        self,
+        plugin_name: str,
+        default: Mapping[Any, Any],
     ) -> Mapping[Any, Any]:
         return self.settings.cog_settings.get(plugin_name, default)
 
-    def set_plugin_setting(
-        self, plugin_name: str, new_settings: Mapping[Any, Any]
-    ) -> None:
+    def set_plugin_setting(self, plugin_name: str, new_settings: Mapping[Any, Any]) -> None:
         self.settings.cog_settings[plugin_name] = new_settings
 
         self.commit()
 
-    def add_admin_log_event(self, event: AdminLogEvent | Mapping[str, Any]):
+    def add_admin_log_event(self, event: AdminLogEvent | Mapping[str, Any]) -> None:
         if not self.log_path.exists():
             logger.warning("Admin log doesn't exist!")
-            with open(self.log_path, "w") as f:
+            with self.log_path.open("w") as f:
                 json.dump([], f)
 
-        with open(self.log_path, "r") as f:
+        with self.log_path.open("r") as f:
             logs: list[dict[str, Any]] = json.load(f)
 
         if isinstance(event, AdminLogEvent):
@@ -159,7 +158,7 @@ class Settings:
         else:
             logs.append(dict(event))
 
-        with open(self.log_path, "w") as f:
+        with self.log_path.open("w") as f:
             json.dump(logs, f, ensure_ascii=False, indent=4)
 
 

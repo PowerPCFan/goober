@@ -4,7 +4,7 @@ from modules.globalvars import DEBUG, GREEN, PURPLE, RED, RESET, YELLOW
 
 
 class GooberFormatter(logging.Formatter):
-    def __init__(self, colors: bool = True):  # Disable colors for TXT output
+    def __init__(self, colors: bool = True) -> None:  # Disable colors for TXT output
         self.colors = colors
 
         self._format = f"[ %(levelname)-8s ]: %(message)s {DEBUG} [%(asctime)s.%(msecs)03d] (%(filename)s:%(funcName)s) {RESET}"  # noqa: E501
@@ -17,11 +17,8 @@ class GooberFormatter(logging.Formatter):
             logging.CRITICAL: PURPLE + self._format + RESET,
         }
 
-    def format(self, record: logging.LogRecord):
-        if self.colors:
-            log_fmt = self.FORMATS.get(record.levelno)  # Add colors
-        else:
-            log_fmt = self._format  # Just use the default format
+    def format(self, record: logging.LogRecord) -> str:
+        log_fmt = self.FORMATS.get(record.levelno) if self.colors else self._format
 
         formatter = logging.Formatter(log_fmt, datefmt="%m/%d/%y %H:%M:%S")
         return formatter.format(record)

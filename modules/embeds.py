@@ -50,7 +50,7 @@ async def send_info(
     embed = discord.Embed(
         title=title,
         description=description,
-        color=discord.Color.blue()
+        color=discord.Color.blue(),
     )
 
     if fields:
@@ -69,7 +69,7 @@ async def send_success(
     *,
     description: str,
     fields: list[DiscordEmbedField] | None = None,
-    title: str = "Success"
+    title: str = "Success",
 ) -> discord.Message:
     ...
 
@@ -80,7 +80,7 @@ async def send_success(
     *,
     description: str,
     fields: list[DiscordEmbedField] | None = None,
-    title: str = "Success"
+    title: str = "Success",
 ) -> discord.InteractionCallbackResponse[discord.Client]:
     ...
 
@@ -100,7 +100,7 @@ async def send_success(
     embed = discord.Embed(
         title=title,
         description=description,
-        color=discord.Color.green()
+        color=discord.Color.green(),
     )
 
     if fields:
@@ -116,7 +116,7 @@ async def send_warning(
     *,
     description: str,
     fields: list[DiscordEmbedField] | None = None,
-    title: str = "Warning"
+    title: str = "Warning",
 ) -> discord.Message:
     ...
 
@@ -127,7 +127,7 @@ async def send_warning(
     *,
     description: str,
     fields: list[DiscordEmbedField] | None = None,
-    title: str = "Warning"
+    title: str = "Warning",
 ) -> discord.InteractionCallbackResponse[discord.Client]:
     ...
 
@@ -137,7 +137,7 @@ async def send_warning(
     *,
     description: str,
     fields: list[DiscordEmbedField] | None = None,
-    title: str = "Warning"
+    title: str = "Warning",
 ):
     if isinstance(ctx_or_interaction, commands.Context):
         send = ctx_or_interaction.send
@@ -147,7 +147,7 @@ async def send_warning(
     embed = discord.Embed(
         title=title,
         description=description,
-        color=discord.Color.orange()
+        color=discord.Color.orange(),
     )
 
     if fields:
@@ -163,7 +163,7 @@ async def send_error(
     *,
     description: str,
     fields: list[DiscordEmbedField] | None = None,
-    title: str = "Error"
+    title: str = "Error",
 ) -> discord.Message:
     ...
 
@@ -184,7 +184,7 @@ async def send_error(
     *,
     description: str,
     fields: list[DiscordEmbedField] | None = None,
-    title: str = "Error"
+    title: str = "Error",
 ):
     if isinstance(ctx_or_interaction, commands.Context):
         send = ctx_or_interaction.send
@@ -194,7 +194,7 @@ async def send_error(
     embed = discord.Embed(
         title=title,
         description=description,
-        color=discord.Color.red()
+        color=discord.Color.red(),
     )
 
     if fields:

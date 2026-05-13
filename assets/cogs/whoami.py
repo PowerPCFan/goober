@@ -3,13 +3,13 @@ from discord.ext import commands
 
 
 class WhoAmI(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.name = "Who Am I?"
         self.description = "👤 | A command to show your user information"
 
     @commands.hybrid_command(description="Show your user information")
-    async def whoami(self, ctx: commands.Context):
+    async def whoami(self, ctx: commands.Context) -> None:
         user_id = ctx.author.id
         username = ctx.author.name
 
@@ -24,5 +24,5 @@ class WhoAmI(commands.Cog):
         await ctx.send(embed=embed)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(WhoAmI(bot))

@@ -4,17 +4,19 @@
 import logging
 import random
 import re
-from collections.abc import Callable, Iterator
 from copy import copy
-from typing import Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import discord
 from discord.ext import commands
 
+from modules.embeds import send_error, send_success, send_warning
 from modules.permission import requires_admin
-from modules.sentenceprocessing import send_message
 from modules.settings import instance as settings_manager
 from modules.sync_connector import instance as synchub
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
 
 logger = logging.getLogger("goober")
 settings = settings_manager.settings
@@ -24,9 +26,7 @@ class SettingsType(TypedDict):
     blacklisted_words: list[str]
 
 
-default_settings: SettingsType = {
-    "blacklisted_words": []
-}
+default_settings: SettingsType = { "blacklisted_words": [] }
 
 
 class Unit(TypedDict):
@@ -46,72 +46,72 @@ class ConvertedValue(TypedDict):
 
 Fahrenheit: Unit = {
     "name": "Fahrenheit",
-    "shorthand": " °F"
+    "shorthand": " °F",
 }
 
 Celsius: Unit = {
     "name": "Celsius",
-    "shorthand": " °C"
+    "shorthand": " °C",
 }
 
 Feet: Unit = {
     "name": "Feet",
-    "shorthand": " ft"
+    "shorthand": " ft",
 }
 
 Meters: Unit = {
     "name": "Meter",
-    "shorthand": " m"
+    "shorthand": " m",
 }
 
 Inch: Unit = {
     "name": "Inch",
-    "shorthand": '"'
+    "shorthand": '"',
 }
 
 Centimeter: Unit = {
     "name": "Centimeter",
-    "shorthand": " cm"
+    "shorthand": " cm",
 }
 
 Mile: Unit = {
     "name": "Mile",
-    "shorthand": " mile(s)"
+    "shorthand": " mile(s)",
 }
 
 Kilometer: Unit = {
     "name": "Kilometer",
-    "shorthand": "km"
+    "shorthand": "km",
 }
 
 Liters: Unit = {
     "name": "Liter",
-    "shorthand": " L"
+    "shorthand": " L",
 }
 
 Gallons: Unit = {
     "name": "Gallon",
-    "shorthand": " gal"
+    "shorthand": " gal",
 }
 
 Kilogram: Unit = {
     "name": "Kilogram",
-    "shorthand": " kg"
+    "shorthand": " kg",
 }
 
 Pounds: Unit = {
     "name": "Pound",
-    "shorthand": " lbs"
+    "shorthand": " lbs",
 }
 
 Grams: Unit = {
     "name": "Gram",
-    "shorthand": " g"
+    "shorthand": " g",
 }
 
 Ounces: Unit = {
     "name": "Ounce",
-    "shorthand": " oz"
+    "shorthand": " oz",
 }
 
 
@@ -121,7 +121,7 @@ Reactions = [
     "That's {val} just in case you wanted to know",
     "that's {val} since you don't know how to Google...",
     "since your internet is down that's {val}",
-    "That's {val}"
+    "That's {val}",
 ]
 
 
@@ -145,8 +145,8 @@ class Converters:
             "metric": None,
             "imperial": {
                 "unit": Fahrenheit,
-                "value": (value * 1.8) + 32
-            }
+                "value": (value * 1.8) + 32,
+            },
         }
 
     @staticmethod
@@ -154,9 +154,9 @@ class Converters:
         return {
             "metric": {
                 "unit": Celsius,
-                "value": (value - 32) / 1.8
+                "value": (value - 32) / 1.8,
             },
-            "imperial": None
+            "imperial": None,
         }
 
     @staticmethod
@@ -165,8 +165,8 @@ class Converters:
             "metric": None,
             "imperial": {
                 "unit": Feet,
-                "value": value * 3.28084
-            }
+                "value": value * 3.28084,
+            },
         }
 
     @staticmethod
@@ -174,9 +174,9 @@ class Converters:
         return {
             "metric": {
                 "unit": Meters,
-                "value": value * 0.3048
+                "value": value * 0.3048,
             },
-            "imperial": None
+            "imperial": None,
         }
 
     @staticmethod
@@ -185,8 +185,8 @@ class Converters:
             "metric": None,
             "imperial": {
                 "unit": Inch,
-                "value": value / 2.54
-            }
+                "value": value / 2.54,
+            },
         }
 
     @staticmethod
@@ -194,12 +194,12 @@ class Converters:
         return {
             "metric": {
                 "unit": Centimeter,
-                "value": value * 2.54
+                "value": value * 2.54,
             },
             "imperial": {
                 "unit": Feet,
-                "value": value * 0.0833333333
-            }
+                "value": value * 0.0833333333,
+            },
         }
 
     @staticmethod
@@ -208,8 +208,8 @@ class Converters:
             "metric": None,
             "imperial": {
                 "unit": Mile,
-                "value": value * 0.621371192
-            }
+                "value": value * 0.621371192,
+            },
         }
 
     @staticmethod
@@ -217,9 +217,9 @@ class Converters:
         return {
             "metric": {
                 "unit": Kilometer,
-                "value": value / 0.621371192
+                "value": value / 0.621371192,
             },
-            "imperial": None
+            "imperial": None,
         }
 
     @staticmethod
@@ -228,8 +228,8 @@ class Converters:
             "metric": None,
             "imperial": {
                 "value": Converters.from_kilometers(value)["imperial"]["value"],
-                "unit": to_speed_unit(Mile)
-            }
+                "unit": to_speed_unit(Mile),
+            },
         }
 
     @staticmethod
@@ -237,9 +237,9 @@ class Converters:
         return {
             "metric": {
                 "value": Converters.from_miles(value)["metric"]["value"],
-                "unit": to_speed_unit(Kilometer)
+                "unit": to_speed_unit(Kilometer),
             },
-            "imperial": None
+            "imperial": None,
         }
 
     @staticmethod
@@ -247,12 +247,12 @@ class Converters:
         return {
             "metric": {
                 "value": value * 3.6,
-                "unit": to_speed_unit(Kilometer)
+                "unit": to_speed_unit(Kilometer),
             },
             "imperial": {
                 "unit": to_speed_unit(Mile),
-                "value": value * 2.23693629
-            }
+                "value": value * 2.23693629,
+            },
         }
 
     @staticmethod
@@ -260,9 +260,9 @@ class Converters:
         return {
             "metric": {
                 "value": value * 3.78541178,
-                "unit": Liters
+                "unit": Liters,
             },
-            "imperial": None
+            "imperial": None,
         }
 
     @staticmethod
@@ -271,8 +271,8 @@ class Converters:
             "metric": None,
             "imperial": {
                 "value": value * 0.264172052,
-                "unit": Gallons
-            }
+                "unit": Gallons,
+            },
         }
 
     @staticmethod
@@ -281,8 +281,8 @@ class Converters:
             "metric": None,
             "imperial": {
                 "value": value * 2.20462262,
-                "unit": Pounds
-            }
+                "unit": Pounds,
+            },
         }
 
     @staticmethod
@@ -290,9 +290,9 @@ class Converters:
         return {
             "metric": {
                 "unit": Kilogram,
-                "value": value * 0.45359237
+                "value": value * 0.45359237,
             },
-            "imperial": None
+            "imperial": None,
         }
 
     @staticmethod
@@ -301,8 +301,8 @@ class Converters:
             "metric": None,
             "imperial": {
                 "unit": Ounces,
-                "value": value * 0.0352739619
-            }
+                "value": value * 0.0352739619,
+            },
         }
 
     @staticmethod
@@ -310,14 +310,14 @@ class Converters:
         return {
             "metric": {
                 "unit": Grams,
-                "value": value * 28.349523125
+                "value": value * 28.349523125,
             },
-            "imperial": None
+            "imperial": None,
         }
 
 
 class Converter(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.description = "🔄|Automatically convert between units (Metric/Imperial) found in chats"
         self.regexes: dict[re.Pattern, Callable] = {
@@ -337,7 +337,7 @@ class Converter(commands.Cog):
             re.compile(r"(?:\s|^)(-?[0-9(.?|,?)]+)\s?(kg|kilos|kilo|kilograms|kilogram)(\s|$)", re.IGNORECASE): Converters.from_kilograms,
             re.compile(r"(?:\s|^)(-?[0-9(.?|,?)]+)\s?(pounds|lbs|lb)(\s|$)", re.IGNORECASE): Converters.from_pounds,
             re.compile(r"(?:\s|^)(-?[0-9(.?|,?)]+)\s?(grams|gram|g)(\s|$)"): Converters.from_grams,
-            re.compile(r"(?:\s|^)(-?[0-9(.?|,?)]+)\s?(oz|ounce|ounces)(\s|$)", re.IGNORECASE): Converters.from_ounces
+            re.compile(r"(?:\s|^)(-?[0-9(.?|,?)]+)\s?(oz|ounce|ounces)(\s|$)", re.IGNORECASE): Converters.from_ounces,
         }
 
     def __format_response(self, converted_values: list[ConvertedValue]) -> str:
@@ -348,12 +348,12 @@ class Converter(commands.Cog):
             temp_line: str = ", and " if (i == len(converted_values) - 1 and i != 0) else ", " if i != 0 else ""
             data_line: str = ""
 
-            for _, data in converted.items():
+            for data in converted.values():
                 if data is None:
                     continue
 
-                value = data["value"]  # type: ignore
-                shorthand = data["unit"]["shorthand"]  # type: ignore
+                value = data["value"]  # pyright: ignore[reportIndexIssue]
+                shorthand = data["unit"]["shorthand"]  # pyright: ignore[reportIndexIssue]
 
                 data_line += f"{' or ' if data_line else ''}**{round(value, 2)}{shorthand}**"
                 logger.debug(temp_line)
@@ -361,10 +361,10 @@ class Converter(commands.Cog):
             temp_line += data_line
             message += temp_line
 
-        return f"-# {random.choice(Reactions).format(val=message)}"
+        return f"-# {random.choice(Reactions).format(val=message)}"  # noqa: S311
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message: discord.Message) -> None:
         settings: SettingsType = settings_manager.get_plugin_settings("converter", default_settings)  # type: ignore[assignment]
 
         if message.author.bot:
@@ -390,7 +390,7 @@ class Converter(commands.Cog):
                 if conversion_func == Converters.from_feet:
                     value = conversion_func(
                         float(match.groups()[0].replace(",", "."))
-                        + Converters.from_inches(float(match.groups()[2].replace(",", ".")))["imperial"]["value"]
+                        + Converters.from_inches(float(match.groups()[2].replace(",", ".")))["imperial"]["value"],
                     )
                 else:
                     value = conversion_func(float(match.groups()[0].replace(",", ".")))
@@ -413,17 +413,17 @@ class Converter(commands.Cog):
         settings: SettingsType = settings_manager.get_plugin_settings("converter", default_settings)  # type: ignore[assignment]
 
         if not word:
-            await send_message(ctx, "Please specify a word!")
+            await send_error(ctx, title="No Word Specified", description="Please specify a word.")
             return
 
         if word in settings["blacklisted_words"]:
-            await send_message(ctx, "Word is already blacklisted!")
+            await send_warning(ctx, title="Word Already Blacklisted", description=f"`{word}` is already blacklisted.")
             return
 
         settings["blacklisted_words"].append(word or "")
 
         settings_manager.set_plugin_setting("converter", settings)
-        await send_message(ctx, f"Blacklisted {word}!")
+        await send_success(ctx, title="Word Blacklisted", description=f"Successfully blacklisted `{word}`.")
 
     @requires_admin()
     @commands.hybrid_command(description="Whitelist a blacklisted word for automatic conversion")
@@ -431,17 +431,17 @@ class Converter(commands.Cog):
         settings: SettingsType = settings_manager.get_plugin_settings("converter", default_settings)  # type: ignore[assignment]
 
         if not word:
-            await send_message(ctx, "Please specify a word!")
+            await send_error(ctx, title="No Word Specified", description="Please specify a word.")
             return
 
         if word not in settings["blacklisted_words"]:
-            await send_message(ctx, "Word has not been blacklisted!")
+            await send_warning(ctx, title="Word Not Blacklisted", description=f"`{word}` is not currently blacklisted.")
             return
 
         settings["blacklisted_words"].remove(word)
 
         settings_manager.set_plugin_setting("converter", settings)
-        await send_message(ctx, f"Whitelisted {word}!")
+        await send_success(ctx, title="Word Whitelisted", description=f"Successfully whitelisted `{word}`.")
 
 
 async def setup(bot: commands.Bot) -> None:

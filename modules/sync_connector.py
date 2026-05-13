@@ -1,3 +1,5 @@
+# ruff: noqa: PLR2004, PLR0911
+
 import logging
 import threading
 
@@ -10,7 +12,7 @@ settings = settings_manager.settings
 
 
 class SyncConnector:
-    def __init__(self, url: str):
+    def __init__(self, url: str) -> None:
         self.connected: bool = True
         self.url = url
         self.client: websocket.WebSocket | None = None
@@ -60,12 +62,11 @@ class SyncConnector:
         try:
             self.client.send(f"event=get;ref=stats;channel=0;name={settings.name}")
             return str(self.client.recv())
-        except Exception as e:
-            logger.debug(e)
-            logger.error("Connection to sync hub reset! Retrying...")
+        except Exception:
+            logger.exception("Connection to sync hub reset! Retrying...")
 
             if not self.__connect():
-                logger.error("Failed to reconnect to sync hub... Disabling")
+                logger.exception("Failed to reconnect to sync hub... Disabling")
                 self.connected = False
                 return "reconnection failed"
 
@@ -124,15 +125,14 @@ class SyncConnector:
 
         try:
             self.client.send(
-                f"event={event};ref={message_id};channel={channel_id};name={settings.name}"
+                f"event={event};ref={message_id};channel={channel_id};name={settings.name}",
             )
             return self.client.recv() == "unhandled"
-        except Exception as e:
-            logger.debug(e)
-            logger.error("Connection to sync hub reset! Retrying...")
+        except Exception:
+            logger.exception("Connection to sync hub reset! Retrying...")
 
             if not self.__connect():
-                logger.error("Failed to reconnect to sync hub... Disabling")
+                logger.exception("Failed to reconnect to sync hub... Disabling")
                 self.connected = False
                 return False
 

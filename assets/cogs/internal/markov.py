@@ -3,9 +3,9 @@ import logging
 import random
 import re
 import time
+from typing import TYPE_CHECKING
 
 import discord
-import markovify
 from discord.ext import commands
 
 from modules.embeds import send_error, send_info
@@ -19,9 +19,11 @@ from modules.sentenceprocessing import (
     improve_sentence_coherence,
     is_positive,
     rephrase_for_coherence,
-    send_message,
 )
 from modules.settings import instance as settings_manager
+
+if TYPE_CHECKING:
+    import markovify
 
 logger = logging.getLogger("goober")
 
@@ -29,17 +31,16 @@ settings = settings_manager.settings
 
 
 class Markov(commands.Cog):
-    def __init__(self, bot):
-        self.bot: commands.Bot = bot
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
         self.name = "Markov model"
         self.description = "🧠 | Commands for Goober's Markov model"
         self.model: markovify.NewlineText | None = load_markov_model()
 
     @requires_admin()
     @commands.hybrid_command()
-    async def retrain(self, ctx: commands.Context):
-        message_ref: discord.Message | None = await send_message(
-            ctx,
+    async def retrain(self, ctx: commands.Context) -> None:
+        message_ref: discord.Message | None = await ctx.send(
             embed=discord.Embed(
                 title="Retraining Model",
                 description="Retraining the Markov model, please wait...",
@@ -52,7 +53,7 @@ class Markov(commands.Cog):
             return
 
         try:
-            with open(settings.bot.active_memory, "r") as f:
+            with open(settings.bot.active_memory, "r") as f:  # noqa: ASYNC230, PTH123
                 memory: list[str] = json.load(f)
         except FileNotFoundError:
             await send_error(ctx, description="Memory file not found!")
@@ -63,8 +64,7 @@ class Markov(commands.Cog):
 
         data_size: int = len(memory)
 
-        processing_message_ref: discord.Message | None = await send_message(
-            ctx,
+        processing_message_ref: discord.Message | None = await ctx.send(
             embed=discord.Embed(
                 title="Processing Data",
                 description=f"Processing `{data_size}` data points...",
@@ -81,22 +81,19 @@ class Markov(commands.Cog):
         if not model:
             logger.error("Failed to train markov model")
             await send_error(ctx, description="Failed to retrain!")
-            return False
+            return
 
         self.model = model
         save_markov_model(self.model)
 
         logger.debug(f"Completed retraining in {round(time.time() - start_time, 3)}s")
 
-        await send_message(
-            ctx,
+        await processing_message_ref.edit(
             embed=discord.Embed(
                 title="Model Retrained",
                 description=f"Markov model retrained successfully using {data_size} data points!",
                 color=discord.Color.green(),
             ),
-            edit=True,
-            edit_message_reference=processing_message_ref,
         )
 
     @commands.hybrid_command()
@@ -119,19 +116,19 @@ class Markov(commands.Cog):
         else:
             response = improve_sentence_coherence(
                 self.model.make_sentence(tries=100, max_words=sentence_size)
-                or "I have nothing to say right now!"
+                or "I have nothing to say right now!",
             )
 
         cleaned_response: str = re.sub(r"[^\w\s]", "", response).lower()
         coherent_response: str = rephrase_for_coherence(cleaned_response)
 
-        if random.random() < 0.9 and is_positive(coherent_response):
-            gif_url: str = random.choice(settings.bot.misc.positive_gifs)
+        if random.random() < 0.9 and is_positive(coherent_response):  # noqa: PLR2004, S311
+            gif_url: str = random.choice(settings.bot.misc.positive_gifs)  # noqa: S311
 
             coherent_response = f"{coherent_response}\n[gif]({gif_url})"
 
-        await send_message(ctx, coherent_response)
+        await ctx.send(coherent_response)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Markov(bot))
